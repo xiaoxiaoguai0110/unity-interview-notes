@@ -274,6 +274,7 @@ section.chapter { scroll-margin-top: 24px; }
 /* Code-first study layer */
 .code-caption{margin:16px 0 -14px;color:#64748b;font-size:12px;font-weight:700;letter-spacing:.04em}
 .life-flow{padding:8px 4px}.life-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:10px 0}.life-node{padding:9px 12px;border:1px solid #b7d4f4;border-radius:8px;background:#eef6ff;color:#1e3a5f;font-family:'JetBrainsMono',monospace;font-size:13px;text-align:center}.life-node.green{background:#ecfdf5;border-color:#a7e3c5;color:#166534}.life-node.orange{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.life-arrow{color:#64748b;font-weight:700}.life-note{margin:8px auto;color:#64748b;font-size:13px;text-align:center}.life-divider{height:1px;margin:14px 8%;background:#dbe4ee}@media(max-width:700px){.life-row{flex-direction:column}.life-arrow{transform:rotate(90deg)}}
+.study-progress{margin:0 0 34px;padding:20px 22px;border:1px solid #bfdbfe;border-left:5px solid #2563eb;border-radius:0 12px 12px 0;background:#eff6ff}.study-progress .progress-title{font-weight:800;color:#1d4ed8;margin-bottom:8px}.study-progress p{margin:6px 0;color:#334155}.study-progress a{display:inline-block;margin-top:10px;padding:8px 13px;border-radius:8px;background:#2563eb;color:#fff;text-decoration:none;font-weight:700}.study-progress a:hover{background:#1d4ed8}.qa.learned{border-left:3px solid #22c55e;padding-left:12px}.learned-badge{display:inline-block;margin:0 0 10px;padding:3px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:700}#continue-here{scroll-margin-top:24px;outline:2px solid #93c5fd;outline-offset:6px}
 </style>
 </head>
 <body class="has-sidebar">
@@ -348,6 +349,13 @@ section.chapter { scroll-margin-top: 24px; }
       <div class="project-flow"><span class="project-node green">输入攻击</span><span class="project-arrow">→</span><span class="project-node">ComboStage</span><span class="project-arrow">→</span><span class="project-node orange">动画关键帧</span><span class="project-arrow">→</span><span class="project-node green">扇形伤害</span></div>
     </div>
   </div>
+</section>
+
+<section class="study-progress" aria-label="学习进度">
+  <div class="progress-title">学习进度 · 2026-08-15</div>
+  <p><strong>今天学到：</strong>第 2 章「GameObject 与 Component、GetComponent 原理与开销」。已完成前 10 道 QA。</p>
+  <p><strong>已复习：</strong>值类型、装箱拆箱、字符串、委托事件、泛型、反射、ref/out/in、协程、MonoBehaviour 生命周期、组件模型。</p>
+  <a href="#continue-here">下次从“Transform 与坐标系”继续 →</a>
 </section>
 
 
@@ -535,9 +543,9 @@ method.<span class="fn">Invoke</span>(player, <span class="kw">null</span>);
     </div>
   </div>
 
-  <div class="qa">
+  <div class="qa learned" id="last-learned">
     <div class="q"><h3>GameObject 和 Component 是什么关系？GetComponent 的原理与开销？</h3></div>
-    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code"><span class="type">GameObject</span> counter = hit.collider.gameObject;
+    <div class="a"><span class="learned-badge">今日已学完</span><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code"><span class="type">GameObject</span> counter = hit.collider.gameObject;
 BaseCounter baseCounter =
     counter.GetComponent&lt;BaseCounter&gt;();
 
@@ -551,7 +559,7 @@ BaseCounter baseCounter =
     </div>
   </div>
 
-  <div class="qa">
+  <div class="qa" id="continue-here">
     <div class="q"><h3>本地坐标系、世界坐标系与 Transform 的关系？</h3></div>
     <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">transform.localPosition = <span class="kw">new</span> <span class="type">Vector3</span>(<span class="num">0</span>, <span class="num">1</span>, <span class="num">0</span>);
 <span class="type">Vector3</span> worldPos = transform.<span class="fn">TransformPoint</span>(localOffset);
