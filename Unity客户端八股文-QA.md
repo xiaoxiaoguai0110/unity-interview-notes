@@ -44,57 +44,87 @@ Player p2 = p1; p2.hp = 50;    // p2 引用同一个对象，p1.hp == 50
 
 **Q2：什么是装箱拆箱？怎么避免？**
 
-装箱是值类型转成 `object`/接口时在堆上分配并拷贝值；拆箱是反向转换，要求类型匹配。装箱会产生堆分配和 GC 压力。
+装箱（Boxing）是把值类型转换为 `object` 或接口类型：运行时会在堆上创建一个对象，把值复制进去。拆箱（Unboxing）是把这个对象取回原来的值类型，必须显式转换，而且类型必须完全匹配。装箱会产生堆分配和 GC 压力，拆箱还会产生类型检查和数据拷贝。
 
 ```csharp
 int x = 5;
-object o = x;              // 装箱：堆分配
-int y = (int)o;            // 拆箱：类型必须匹配
+object o = x;              // 装箱：创建对象并复制 x
+int y = (int)o;            // 拆箱：取回 int
+
+object value = 5;
+// long n = (long)value;   // 错误：value 中装箱的是 int，不是 long
+long n = (long)(int)value; // 先拆成 int，再转成 long
 
 // 避免：使用泛型集合，不用非泛型集合
 List<int> good = new List<int>();   // 不装箱
 ArrayList bad = new ArrayList();    // bad.Add(5) 每次装箱
 
-string s1 = x.ToString();           // ToString 不装箱
-string s2 = "v=" + x;               // 拼接值类型会装箱，大量拼接用 StringBuilder
+string s1 = x.ToString();            // 常见情况下不需要额外装箱
+string s2 = "v=" + x;               // 频繁拼接会产生临时字符串
 ```
+
+面试时可以补充：`enabled = false`、`SetActive(false)` 与装箱无关；装箱主要出现在 `object`、非泛型集合、接口调用、旧式 API 或把值类型当作委托参数使用的场景。高频代码中优先使用泛型集合、泛型方法和预分配容器。
 
 **Q3：为什么字符串大量拼接慢？StringBuilder 的原理？**
 
-`string` 不可变，`+` 每次拼接都会创建新字符串，循环拼接复杂度 O(n²) 且产生大量垃圾。`StringBuilder` 内部维护可变 `char[]` 缓冲区，容量不足时翻倍扩容，只在最后 `ToString()` 分配一次。
+`string` 是不可变（immutable）引用类型。使用 `+`、`Concat` 或插值改变内容时，实际上会创建新的字符串对象，旧字符串成为垃圾。循环拼接会反复复制已有内容，通常有 O(n²) 的拷贝成本并产生大量 GC。
+
+`StringBuilder` 内部维护可变缓冲区，`Append` 时优先写入已有容量，容量不足才扩容，最后调用 `ToString()` 生成结果。单次、少量拼接使用插值或 `string.Format` 即可；循环、大量片段拼接才适合 `StringBuilder`。
 
 ```csharp
+// 反例：每次 += 都可能创建新字符串
 string s = "";
-for (int i = 0; i < 10000; i++) s += i.ToString();   // 慢：每次新建字符串
+for (int i = 0; i < 10000; i++)
+    s += i.ToString();
 
+// 正例：复用缓冲区
 var sb = new StringBuilder(64);
-for (int i = 0; i < 10000; i++) sb.Append(i);         // 快：复用内部缓冲区
+for (int i = 0; i < 10000; i++)
+    sb.Append(i);
 string result = sb.ToString();
 ```
 
+Unity 中不要在 `Update` 里反复创建临时字符串用于日志或 UI；可以降低日志频率、缓存不变文本，并复用 `StringBuilder`。注意 `StringBuilder.ToString()` 仍然会创建最终字符串，只是把分配集中到最后。
+
 **Q4：委托和事件的区别？**
 
-委托是类型安全的函数指针，支持多播；事件是对委托的封装，外部只能 `+=`/`-=`，不能直接 `Invoke`。事件用于发布-订阅解耦，委托适合回调参数传递。
+委托是类型安全的方法引用，可以保存一个或多个方法；事件是对委托的封装，外部只能 `+=`/`-=`，不能赋值、清空或直接 `Invoke`。事件适合发布-订阅，委托适合回调参数传递。
 
 ```csharp
-public delegate void DamageHandler(int dmg);
-
 public class Unit {
-    public event DamageHandler OnDamaged;   // 事件：外部只能注册/注销
-    public Action<int> onDeath;             // 委托字段：外部可随意调用（不推荐）
+    public event Action<int> OnDamaged;
 
     public void DealDamage(int dmg) {
-        OnDamaged?.Invoke(dmg);             // 只有本类能触发事件
+        // 只有 Unit 内部能触发事件
+        OnDamaged?.Invoke(dmg);
     }
 }
 
-unit.OnDamaged += (d) => Debug.Log("受击 " + d);   // 订阅
-unit.OnDamaged -= handler;                          // 记得反注册，防泄漏
+public class DamageUI {
+    private Unit unit;
+
+    public DamageUI(Unit unit) {
+        this.unit = unit;
+        unit.OnDamaged += ShowDamage;       // 订阅
+    }
+
+    public void Dispose() {
+        unit.OnDamaged -= ShowDamage;       // 反注册
+    }
+
+    private void ShowDamage(int dmg) {
+        Debug.Log("受击 " + dmg);
+    }
+}
+
+// unit.OnDamaged?.Invoke(10); // 编译错误：外部没有触发权
 ```
+
+Unity 中常在 `OnEnable` 订阅、`OnDisable` 反注册。不要用两个内容相同但实例不同的匿名 Lambda 进行反注册；应该保存委托引用，或使用普通方法。事件不等于“自动解除引用”，生命周期结束时仍然要取消订阅。
 
 **Q5：泛型为什么能避免装箱？有哪些约束？**
 
-泛型在编译期确定类型，值类型用泛型容器/方法时按原类型处理，无需转 `object`。约束用 `where` 限定类型参数。
+泛型把类型作为参数，在编译期保留具体类型。值类型放入 `List<int>` 或传给泛型方法时，不需要先转成 `object`，因此可以避免非泛型集合常见的装箱拆箱，同时提供编译期类型检查。约束用 `where` 限定类型参数。
 
 ```csharp
 T Max<T>(T a, T b) where T : IComparable<T> {
@@ -104,29 +134,62 @@ T Max<T>(T a, T b) where T : IComparable<T> {
 int m = Max(3, 5);        // 值类型，不装箱
 string t = Max("a", "b");
 
-// 常用约束：where T : class / struct / new() / 基类 / 接口
+// 常用约束：class / struct / new() / 基类 / 接口
 T Create<T>() where T : new() => new T();
+
+public class ComponentPool<T> where T : MonoBehaviour {
+    private List<T> items = new List<T>();
+}
 ```
+
+常见误区：泛型不代表一定没有任何 GC；如果把 `T` 再转成 `object`、使用闭包或创建临时对象，仍然可能分配。泛型的核心收益是类型安全、代码复用，以及在值类型场景下避免不必要的装箱。
 
 **Q6：深拷贝和浅拷贝怎么实现？**
 
-浅拷贝只复制引用，深拷贝复制所有引用对象内容。类里有引用类型字段时，默认拷贝都是浅拷贝。
+浅拷贝只复制最外层对象；字段如果是引用类型，复制后仍指向同一个内部对象。深拷贝则要把内部引用对象也重新创建一份。类里有数组、List 或其他 class 字段时，直接赋值和 `MemberwiseClone` 都不能自动完成深拷贝。
 
 ```csharp
 public class Skill {
     public int id;
-    public float[] mods;                    // 引用类型字段
+    public float[] mods;
 
     public Skill ShallowCopy() => (Skill)MemberwiseClone();   // mods 仍共享
 
     public Skill DeepCopy() => new Skill {
         id = id,
-        mods = (float[])mods.Clone()        // 数组单独克隆一份
+        mods = (float[])mods.Clone()        // 内部数组也复制
     };
 }
+
+Skill a = new Skill { id = 1, mods = new[] { 1f, 2f } };
+Skill b = a.ShallowCopy();
+b.mods[0] = 99f;
+// a.mods[0] == 99：浅拷贝共享同一个数组
+
+Skill c = a.DeepCopy();
+c.mods[0] = 50f;
+// a.mods[0] 不会因为 c 的修改而改变
 ```
 
-**Q7：async/await 的原理？Unity 中使用要注意什么？**
+Unity 中 `GameObject clone = original` 只是复制引用，两个变量仍指向同一个对象；`Instantiate(original)` 才是创建一个新的 Unity 对象层级。项目中要根据需求选择复制配置数据、运行时状态还是整个对象层级，避免误把共享引用当成独立副本。
+
+**Q7：数组和 `List<T>` 有什么区别？什么时候使用？**
+
+数组长度固定，内存连续、访问开销小，适合出生点、固定技能槽、固定缓冲区等数量已知的场景。`List<T>` 是动态数组，内部容量不足时会扩容，适合敌人列表、背包、任务列表等数量经常变化的场景。
+
+```csharp
+int[] points = { 10, 20, 30 };
+Debug.Log(points.Length);
+
+List<int> scores = new List<int>(16); // 可提前设置容量
+scores.Add(10);
+scores.Remove(10);
+Debug.Log(scores.Count);
+```
+
+数组可以用 `Clone` 复制第一层；`new List<T>(oldList)` 也只复制列表容器，如果元素本身是 class，元素对象仍可能被多个列表共享。高频代码中应合理设置 `List<T>` 容量，减少扩容和 GC；不要为了“统一”而把所有固定数据都改成 List。
+
+**Q8：async/await 的原理？Unity 中使用要注意什么？**
 
 `async/await` 由编译器生成状态机（`IAsyncStateMachine`），挂起时不阻塞线程，完成后回调继续执行。Unity 注意：`async void` 异常难捕获易崩溃；MonoBehaviour 销毁后回调仍可能执行；引擎 API 只能在主线程调用。
 
@@ -143,7 +206,7 @@ async UniTaskVoid LoadAndShow() {
 }
 ```
 
-**Q8：const、readonly、静态构造函数各有什么特点？**
+**Q9：const、readonly、静态构造函数各有什么特点？**
 
 `const` 编译期常量，必须是字面量，编译时替换；`readonly` 运行时只读，可在构造函数中赋值；静态构造函数在首次访问静态成员时执行且只执行一次。
 
