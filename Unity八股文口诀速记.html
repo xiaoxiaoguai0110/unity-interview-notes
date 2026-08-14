@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Unity 客户端八股文 · 口诀速记卡</title>
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:"Segoe UI","Microsoft YaHei","PingFang SC",Arial,sans-serif;background:#f1f5f9;color:#1f2937;line-height:1.7;font-size:15px}
+header{background:linear-gradient(135deg,#1e3a8a,#4f46e5);color:#fff;padding:28px 20px 22px;text-align:center}
+header h1{margin:0 0 6px;font-size:24px}
+header p{margin:0 0 14px;opacity:.9;font-size:14px}
+.tools{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;max-width:720px;margin:0 auto}
+#search{flex:1;min-width:220px;padding:9px 14px;border:none;border-radius:8px;font-size:14px;outline:none}
+.tools button{padding:9px 16px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;font-size:14px;cursor:pointer}
+.tools button:hover{background:rgba(255,255,255,.25)}
+main{max-width:1080px;margin:0 auto;padding:24px 16px 60px}
+section{margin-bottom:34px}
+section>h2{font-size:19px;margin:0 0 14px;padding:8px 14px;background:#fff;border-left:5px solid #4f46e5;border-radius:8px;box-shadow:0 1px 3px rgba(15,23,42,.06);color:#111827}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.card{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 4px rgba(15,23,42,.08);border-top:3px solid #6366f1;display:flex;flex-direction:column}
+.card.hidden{display:none}
+.mne{font-size:17px;font-weight:700;color:#4338ca;letter-spacing:1px;margin-bottom:6px}
+.topic{font-size:13px;color:#64748b;margin-bottom:8px}
+.exp{font-size:13.5px;color:#334155;border-top:1px dashed #e2e8f0;padding-top:8px;margin-top:4px}
+.exp code,.topic code{background:#eef2f7;border:1px solid #e2e8f0;border-radius:4px;padding:0 5px;font-size:12.5px;color:#be185d}
+.hook{font-size:13px;color:#0d9488;margin-top:8px}
+.hook::before{content:"记忆钩子 ";color:#0f766e;font-weight:700}
+body.mode .exp,body.mode .hook{display:none}
+body.mode .card{border-top-color:#f59e0b}
+body.mode .mne{color:#b45309;font-size:18px}
+footer{max-width:1080px;margin:0 auto;padding:10px 16px 40px;text-align:center;color:#94a3b8;font-size:13px}
+@media print{
+  header{background:#fff;color:#000;border-bottom:2px solid #333}
+  .tools{display:none}
+  body.mode .exp,body.mode .hook{display:block}
+  .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Unity 客户端八股文 · 口诀速记卡</h1>
+  <p>一句话记住一个考点 · 配合《Unity客户端八股文-QA-结合项目》使用 · 每张卡都有记忆钩子</p>
+  <div class="tools">
+    <input id="search" type="search" placeholder="搜索考点 / 口诀，如：生命周期、对象池、ZTest"/>
+    <button id="modeBtn" type="button">背口诀模式（隐藏解释）</button>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <h2>一、生命周期与脚本</h2>
+  <div class="grid">
+    <div class="card" data-tags="生命周期 Awake OnEnable Start FixedUpdate Update LateUpdate OnDisable OnDestroy 顺序">
+      <div class="mne">醒启始 · 固更晚 · 禁毁</div>
+      <div class="topic">MonoBehaviour 生命周期执行顺序</div>
+      <div class="exp"><p><code>Awake(醒)</code> → <code>OnEnable(启)</code> → <code>Start(始)</code> → <code>FixedUpdate(固)</code> → <code>Update(更)</code> → <code>LateUpdate(晚)</code> → <code>OnDisable(禁)</code> → <code>OnDestroy(毁)</code>。同一帧先全部 Awake 再全部 Start。</p></div>
+      <div class="hook">相机跟随放 LateUpdate——"最后一个下班"。</div>
+    </div>
+    <div class="card" data-tags="Awake Start 区别 初始化 组件缓存">
+      <div class="mne">Awake 管自己，Start 等别人</div>
+      <div class="topic">Awake 和 Start 的区别</div>
+      <div class="exp"><p><code>Awake</code>：缓存组件、初始化自身字段（未启用也执行）；<code>Start</code>：依赖其他对象已就绪的逻辑（如注册全局管理器）。</p></div>
+      <div class="hook">3DActGame 的 Player 在 Awake 缓存 InputReader/Animator/CharacterController/Health。</div>
+    </div>
+    <div class="card" data-tags="Update FixedUpdate LateUpdate 物理 相机 逻辑">
+      <div class="mne">物理 Fixed、逻辑 Update、相机 Late</div>
+      <div class="topic">三个 Update 各干各的</div>
+      <div class="exp"><p><code>FixedUpdate</code> 固定步长（50Hz）跑物理；<code>Update</code> 每帧跑输入和逻辑；<code>LateUpdate</code> 最后跑相机跟随。移动刚体用 FixedUpdate + velocity/MovePosition。</p></div>
+      <div class="hook">"晚更新"晚在谁后面？角色和动画都更新完之后。</div>
+    </div>
+    <div class="card" data-tags="SetActive enabled 禁用 协程 OnDisable">
+      <div class="mne">SetActive 整棵子树，enabled 只管自己</div>
+      <div class="topic">SetActive(false) 与 enabled=false</div>
+      <div class="exp"><p><code>SetActive(false)</code> 禁用整个 GameObject（含子物体）并触发 <code>OnDisable</code>；<code>enabled=false</code> 只停该组件回调。二者都不会停协程。</p></div>
+      <div class="hook">"禁用一个，禁用全家；禁用自己，别人照跑。"</div>
+    </div>
+    <div class="card" data-tags="GetComponent 缓存 Awake 组件引用 性能">
+      <div class="mne">组件引用 Awake 缓存，Update 只做正事</div>
+      <div class="topic">如何高效获取组件引用</div>
+      <div class="exp"><p>避免每帧 <code>GetComponent</code>/<code>Find</code>；在 <code>Awake</code> 缓存，配合 <code>[RequireComponent]</code> 保证存在，可选组件用 <code>TryGetComponent</code>。</p></div>
+      <div class="hook">面试反例："每帧 GameObject.Find + GetComponent，等于每天翻通讯录找人。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>二、协程与异步</h2>
+  <div class="grid">
+    <div class="card" data-tags="协程 原理 IEnumerator MoveNext yield 迭代器">
+      <div class="mne">迭代器，挂起又恢复，主线程上不并行</div>
+      <div class="topic">协程原理</div>
+      <div class="exp"><p>方法返回 <code>IEnumerator</code>，Unity 每帧调 <code>MoveNext()</code>，遇 <code>yield return</code> 挂起，按返回指令决定恢复时机。协程跑在主线程，不是多线程。</p></div>
+      <div class="hook">把它想成"游戏自己给自己设的闹钟"。</div>
+    </div>
+    <div class="card" data-tags="协程 线程 区别 并行 主线程">
+      <div class="mne">协程挂起不并行，线程并行不同步</div>
+      <div class="topic">协程 vs 线程</div>
+      <div class="exp"><p>协程：单线程协作式调度，能挂起/恢复但不能并行，适合分帧处理；线程：真并行，适合耗时计算，但 Unity API 大多只能在主线程调用。</p></div>
+      <div class="hook">"协程是排队上厕所，线程是分开的多条队伍。"</div>
+    </div>
+    <div class="card" data-tags="WaitForSeconds GC 缓存 协程优化">
+      <div class="mne">WaitForSeconds 每次 new 都是垃圾</div>
+      <div class="topic">协程等待对象的 GC 优化</div>
+      <div class="exp"><p><code>WaitForSeconds</code> 是引用类型，高频 <code>new</code> 会产生堆分配；用 <code>static readonly</code> 缓存复用，或用 UniTask 彻底消除。</p></div>
+      <div class="hook">"同一秒的闹钟，买一个用到底。"</div>
+    </div>
+    <div class="card" data-tags="Invoke Timer 计时器 重构 字符串">
+      <div class="mne">Invoke 靠字符串，改了名字就失灵</div>
+      <div class="topic">Invoke 的坑与 TimerManager 重构（3DActGame）</div>
+      <div class="exp"><p><code>Invoke("DisableDamage", 0.5f)</code> 方法名是字符串：编译不检查、不能传参、不能单独取消。改用 <code>TimerManager.Instance.Schedule(0.5f, () =&gt; ...)</code>：统一入口、可取消、可暂停、可池化。</p></div>
+      <div class="hook">面试原话："我早期用 Invoke，后来发现坑就重构了。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>三、物理系统</h2>
+  <div class="grid">
+    <div class="card" data-tags="碰撞 触发 Collider Rigidbody 条件">
+      <div class="mne">两边都有 Collider，一边要有 Rigidbody</div>
+      <div class="topic">碰撞/触发事件的触发条件</div>
+      <div class="exp"><p>双方都要有 <code>Collider</code>，至少一方有 <code>Rigidbody</code>；勾选 <code>IsTrigger</code> 走触发事件，否则走碰撞事件。</p></div>
+      <div class="hook">"没刚体没人理你，没碰撞体你撞不到人。"</div>
+    </div>
+    <div class="card" data-tags="OnTrigger OnCollision IsTrigger 区别">
+      <div class="mne">Trigger 无阻挡只检测，Collision 有阻挡带碰撞</div>
+      <div class="topic">OnTrigger 与 OnCollision 的区别</div>
+      <div class="exp"><p><code>OnTriggerEnter</code>：进入区域，只检测、不阻挡；<code>OnCollisionEnter</code>：物理接触，有阻挡和碰撞。3DActGame 的武器伤害检测就是 <code>Box Collider(IsTrigger) + Rigidbody(IsKinematic)</code>。</p></div>
+      <div class="hook">"触发器是安检门，碰撞体是一堵墙。"</div>
+    </div>
+    <div class="card" data-tags="Rigidbody 移动 velocity MovePosition transform 物理">
+      <div class="mne">velocity 物理推，MovePosition 平滑移，直改 transform 是作弊</div>
+      <div class="topic">刚体移动的三种方式</div>
+      <div class="exp"><p>设 <code>velocity</code>：物理驱动；<code>MovePosition</code>：平滑且参与物理；直接改 <code>transform.position</code>：绕过物理引擎，破坏模拟。</p></div>
+      <div class="hook">"直改 transform 等于把物理引擎当摆设。"</div>
+    </div>
+    <div class="card" data-tags="CharacterController Rigidbody 选择 玩家 武器">
+      <div class="mne">CC 管人不吃力，RB 受力才真实</div>
+      <div class="topic">CharacterController vs Rigidbody（3DActGame）</div>
+      <div class="exp"><p>玩家用 <code>CharacterController</code>：自带碰撞/斜坡处理，不受物理力影响；武器/特效用 <code>IsKinematic Rigidbody</code>：只检测不模拟；箱子、尸体这类受力物体才用动态 Rigidbody。</p></div>
+      <div class="hook">面试追问："你玩家为什么不用 Rigidbody？——因为我不想让怪一掌把玩家打飞。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>四、渲染与图形学</h2>
+  <div class="grid">
+    <div class="card" data-tags="渲染管线 顶点 几何 光栅化 片元 流程">
+      <div class="mne">顶点、几何、光栅化，片元最后把色画</div>
+      <div class="topic">渲染管线大致流程</div>
+      <div class="exp"><p>顶点着色（坐标变换）→ 几何处理（裁剪/图元装配）→ 光栅化（变成像素）→ 片元着色（算颜色），最后深度测试/混合输出。</p></div>
+      <div class="hook">"先摆骨架（顶点），再填像素（光栅化），最后上色（片元）。"</div>
+    </div>
+    <div class="card" data-tags="DrawCall 合批 静态 动态 GPU Instancing SRP Batcher 优化">
+      <div class="mne">静动 Instance，SRP 图集，LOD 剔除</div>
+      <div class="topic">Draw Call 的优化方式</div>
+      <div class="exp"><p>静态合批、动态合批、<code>GPU Instancing</code>、<code>SRP Batcher</code>，配套：图集（Atlas）、LOD、遮挡/视锥剔除。</p></div>
+      <div class="hook">"一桌菜一次上（合批），别一道一道端。"</div>
+    </div>
+    <div class="card" data-tags="纹理内存 计算 RGBA32 ASTC Mipmap 压缩">
+      <div class="mne">RGBA32 四个字节，ASTC 一个字节，Mipmap 乘 1.33</div>
+      <div class="topic">纹理内存估算</div>
+      <div class="exp"><p>内存 ≈ 宽 × 高 × 字节/像素。<code>RGBA32</code> = 4B，<code>ASTC 4x4</code> ≈ 1B；开 Mipmap 总量约 ×1.33。1024×1024 RGBA32 ≈ 4MB。</p></div>
+      <div class="hook">"移动端无脑 ASTC，画质换内存。"</div>
+    </div>
+    <div class="card" data-tags="ZTest ZWrite 深度 透明 顺序">
+      <div class="mne">ZTest 测深度，ZWrite 写深度，透明只测不写</div>
+      <div class="topic">深度测试与写入</div>
+      <div class="exp"><p><code>ZTest</code>：片元通过深度测试的条件（默认 LEqual）；<code>ZWrite</code>：是否写入深度缓冲。透明物体 <code>ZWrite Off</code>，从远到近混合，避免遮挡后面的透明物。</p></div>
+      <div class="hook">"ZTest 是进门查票，ZWrite 是进门后盖章。"</div>
+    </div>
+    <div class="card" data-tags="URP HDRP 内置渲染管线 选型 移动端">
+      <div class="mne">URP 轻量移动端，HDRP 高画质 PC/主机，内置兼容最稳</div>
+      <div class="topic">渲染管线怎么选</div>
+      <div class="exp"><p>URP：轻量跨平台、移动端友好、SRP Batcher；HDRP：物理渲染高品质、面向 PC/主机；内置管线：兼容性最好但已维护中。</p></div>
+      <div class="hook">"手游上 URP，大作上 HDRP，老项目内置。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>五、Shader</h2>
+  <div class="grid">
+    <div class="card" data-tags="描边 Outline Cull Front 法线外扩 Shader">
+      <div class="mne">Cull Front 外扩，背面画成描边</div>
+      <div class="topic">描边（Outline）原理</div>
+      <div class="exp"><p>只渲染背面（<code>Cull Front</code>），顶点沿法线外扩，画黑色描边层；再正常渲染正面。</p></div>
+      <div class="hook">"给模型穿一件撑大的黑外套。"</div>
+    </div>
+    <div class="card" data-tags="Blinn-Phong PBR 高光 半角向量 能量守恒">
+      <div class="mne">半角算高光，PBR 讲守恒</div>
+      <div class="topic">Blinn-Phong 与 PBR 的区别</div>
+      <div class="exp"><p>Blinn-Phong：用半角向量近似高光，公式简单、不守恒；PBR：基于微表面理论，金属度/粗糙度描述材质，能量守恒、跨光照环境表现一致。</p></div>
+      <div class="hook">"Blinn-Phong 是估算，PBR 是记账（守恒）。"</div>
+    </div>
+    <div class="card" data-tags="卡通 Toon Ramp 渐变 色阶 变体">
+      <div class="mne">Ramp 纹理做色阶，配合描边成卡通</div>
+      <div class="topic">卡通渲染（Toon）</div>
+      <div class="exp"><p>把漫反射 N·L 映射到 Ramp 纹理上，采样出色阶，形成硬边卡通光影；变体用 <code>shader_feature</code> 裁剪、ShaderVariantCollection 预编译。</p></div>
+      <div class="hook">"灰度值对着色卡选色，就是卡通。"</div>
+    </div>
+    <div class="card" data-tags="受击闪白 HitFlash lerp 衰减 Shader 项目">
+      <div class="mne">受击闪白 = 混白再衰减</div>
+      <div class="topic">受击闪白效果（3DActGame 可落地）</div>
+      <div class="exp"><p>Shader 暴露 <code>_FlashAmount</code>，<code>lerp(基色, 白, _FlashAmount)</code>；C# 受击时顶到 1，再用协程 0.1s 衰减回 0，和 GetHit 动画同步。</p></div>
+      <div class="hook">"被打一下白一瞬，跟动画一起响。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>六、UGUI</h2>
+  <div class="grid">
+    <div class="card" data-tags="Canvas 渲染模式 Overlay Camera World Space">
+      <div class="mne">Overlay 最上层，Camera 可被挡，World 世界放</div>
+      <div class="topic">Canvas 三种渲染模式</div>
+      <div class="exp"><p>Screen Space Overlay：永远最上层；Screen Space Camera：渲染到指定相机、可被 3D 遮挡；World Space：世界空间 UI（血条、飘字）。</p></div>
+      <div class="hook">"血条是世界的，面板是屏幕的。"</div>
+    </div>
+    <div class="card" data-tags="UI 卡顿 Canvas 重建 合批 Mask Overdraw 原因">
+      <div class="mne">重建、打断、Mask 多，Overdraw 拖后腿</div>
+      <div class="topic">UI 卡顿的常见原因</div>
+      <div class="exp"><p>Canvas 重建频繁（改文本/颜色/位置）、合批被打断、Mask 过多、Overdraw、文本过多。</p></div>
+      <div class="hook">"UI 一卡，先查这四件事。"</div>
+    </div>
+    <div class="card" data-tags="UI 优化 动静分离 RaycastTarget RectMask2D CanvasGroup">
+      <div class="mne">动静分离，关 Raycast，RectMask 顶替，CanvasGroup 淡入淡出</div>
+      <div class="topic">UI 优化手段</div>
+      <div class="exp"><p>频繁变化的 UI 单独放 Canvas；关闭无用 <code>raycastTarget</code>；用 <code>RectMask2D</code> 代替 Mask；隐藏用 <code>CanvasGroup</code>（alpha/interactable/blocksRaycasts）避免 SetActive 触发重建。</p></div>
+      <div class="hook">"常变的单住一个屋，别拉着全家重建。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>七、资源管理与热更新</h2>
+  <div class="grid">
+    <div class="card" data-tags="Resources AssetBundle Addressables 区别 热更">
+      <div class="mne">Resources 打包里，AB 可热更要自管，Addressables 全自动</div>
+      <div class="topic">资源加载三兄弟</div>
+      <div class="exp"><p><code>Resources</code>：随包打进、不能热更、加载慢；<code>AssetBundle</code>：可独立打包远程下载，但要自己管依赖/卸载；<code>Addressables</code>：基于 AB 自动管引用计数和依赖。</p></div>
+      <div class="hook">"Resources 是背包里的，AB 是外卖可更新的，Addressables 是管家全包的。"</div>
+    </div>
+    <div class="card" data-tags="热更新 AssetBundle xLua HybridCLR 逻辑 资源">
+      <div class="mne">资源走 AB，逻辑走脚本</div>
+      <div class="topic">热更新方案</div>
+      <div class="exp"><p>资源热更：AssetBundle + 版本清单 + 增量下载；逻辑热更：xLua/toLua、ILRuntime、HybridCLR（IL2CPP 下补充元数据 + 解释执行）。</p></div>
+      <div class="hook">"资源和逻辑分开更，只下增量最快。"</div>
+    </div>
+    <div class="card" data-tags="对象池 预创建 复用 状态重置 容量">
+      <div class="mne">预创建、复用、重置，容量上限别忘记</div>
+      <div class="topic">对象池三要点</div>
+      <div class="exp"><p>预创建一定数量 → 用 <code>SetActive</code> 复用 → <code>OnDespawn</code> 必须重置状态（血量、FSM、计时器），还要设容量上限。3DActGame 重构方向：受击特效/敌人池化。</p></div>
+      <div class="hook">"复用出来满血满状态，否则全是上个敌人的残魂。"</div>
+    </div>
+    <div class="card" data-tags="引用计数 资源管理器 Retain Release 卸载">
+      <div class="mne">Retain +1，Release -1，归零才卸载</div>
+      <div class="topic">引用计数资源管理器</div>
+      <div class="exp"><p>每个资源记录引用数，加载 +1、释放 -1，减到 0 才真正卸载，避免重复加载和泄漏。</p></div>
+      <div class="hook">"没人用了才退房，有人住着不退。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>八、内存与性能优化</h2>
+  <div class="grid">
+    <div class="card" data-tags="GC 优化 装箱 字符串 LINQ 闭包 new 分配">
+      <div class="mne">装箱、拼接、每帧 new，LINQ 闭包要提防</div>
+      <div class="topic">如何降低 GC 分配</div>
+      <div class="exp"><p>避免装箱、字符串拼接、每帧 <code>new</code> 临时对象、LINQ/闭包分配；缓存组件引用和 WaitForSeconds；用 NonAlloc 物理查询和对象池。</p></div>
+      <div class="hook">"每帧少造一个对象，GC 少忙一秒钟。"</div>
+    </div>
+    <div class="card" data-tags="内存泄漏 事件反注册 静态引用 协程 AssetBundle 单例">
+      <div class="mne">事件没反注册，静态抱住大对象，协程没停 AB 没卸</div>
+      <div class="topic">内存泄漏常见原因</div>
+      <div class="exp"><p>事件未反注册、静态字段持有对象、协程未停止、AssetBundle 未卸载、单例持有大对象、闭包被长期持有。</p></div>
+      <div class="hook">"OnDisable 记得 -=，否则 UI 死了还活着。"</div>
+    </div>
+    <div class="card" data-tags="Profiler 定位 性能 CPU GC Memory 真机">
+      <div class="mne">CPU 看热点，GC 看分配，Memory 看快照</div>
+      <div class="topic">如何用 Profiler 定位性能问题</div>
+      <div class="exp"><p>CPU 模块找耗时热点；GC Alloc 列抓分配；Memory 快照对比找泄漏；渲染面板看 Draw Call；最后真机 Profiler 验证。</p></div>
+      <div class="hook">"改一处、测一处，别凭感觉优化。"</div>
+    </div>
+    <div class="card" data-tags="性能优化 案例 数字 AI 冷却 重构">
+      <div class="mne">优化要有数字，不然只是感觉</div>
+      <div class="topic">项目性能优化案例（KitchenChaos/3DActGame）</div>
+      <div class="exp"><p>KitchenChaos：AI 冷却 0.8s → 0.15s 解决发呆；3DActGame：Invoke → TimerManager + 对象池，用 Profiler 记录 GC Alloc 前后对比。</p></div>
+      <div class="hook">面试只说这一句："重构后战斗场景 GC 从每帧 150KB 降到 0。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>九、动画系统</h2>
+  <div class="grid">
+    <div class="card" data-tags="Animator 参数 Trigger Bool Float 状态机">
+      <div class="mne">Trigger 一次性，Bool 持续态，Float 连续值</div>
+      <div class="topic">Animator 三类参数</div>
+      <div class="exp"><p><code>Trigger</code>：一次性触发（攻击/受击，用后自动复位）；<code>Bool</code>：持续状态（接地、跑步）；<code>Float</code>：连续值（Speed 驱动 Blend Tree）。3DActGame：OnAttack(Trigger)、ComboStage(int)、Speed(float)。</p></div>
+      <div class="hook">"Trigger 是按铃，Bool 是开关，Float 是油门。"</div>
+    </div>
+    <div class="card" data-tags="Animation Event 动画事件 关键帧 判定">
+      <div class="mne">关键帧放判定，时机最精确</div>
+      <div class="topic">Animation Event 的用途（3DActGame）</div>
+      <div class="exp"><p>攻击动画关键帧回调 <code>OnAttackHit()</code> 做扇形伤害判定、<code>OnAttackEnd()</code> 切回 Pursuit、<code>OnGetHitEnd()</code> 回 Idle。判定跟动画走，改了动画判定也跟上。</p></div>
+      <div class="hook">"刀挥到哪一帧命中，由美术说了算。"</div>
+    </div>
+    <div class="card" data-tags="Root Motion 代码移动 选择 位移">
+      <div class="mne">动作位移用动画，玩家操控走代码，二者混用会抖</div>
+      <div class="topic">Root Motion vs 代码移动</div>
+      <div class="exp"><p>Root Motion：位移由动画驱动，连招/受击位移天然一致；代码移动：响应快、可控，适合玩家操控和网络同步。混用会抖动，必须二选一。</p></div>
+      <div class="hook">"操控权要么给玩家，要么给动画，不能两个人抢方向盘。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>十、网络编程</h2>
+  <div class="grid">
+    <div class="card" data-tags="TCP UDP KCP 区别 可靠 延迟">
+      <div class="mne">TCP 可靠有序，UDP 快而糙，KCP 补可靠</div>
+      <div class="topic">TCP / UDP / KCP 选型</div>
+      <div class="exp"><p>TCP：可靠有序，适合登录、结算；UDP：快但不可靠，适合实时战斗；KCP：在 UDP 上实现确认重传的可靠传输，低延迟，常用于帧同步。</p></div>
+      <div class="hook">"TCP 是挂号信，UDP 是飞鸽传书，KCP 是给鸽子配了对讲机。"</div>
+    </div>
+    <div class="card" data-tags="帧同步 状态同步 确定性 输入 权威">
+      <div class="mne">帧同步传输入、两端同算；状态同步传状态、服务器权威</div>
+      <div class="topic">帧同步 vs 状态同步</div>
+      <div class="exp"><p>帧同步：只同步输入指令、各端跑相同逻辑，带宽低、可回放，要求确定性（定点数、统一随机种子、固定迭代顺序）；状态同步：服务器权威广播状态、客户端插值，防作弊好。</p></div>
+      <div class="hook">"帧同步是每人发同一张卷子；状态同步是老师统一公布答案。"</div>
+    </div>
+    <div class="card" data-tags="粘包 拆包 包头 长度 TCP 协议">
+      <div class="mne">包头写长度，按长拆包，半包先攒着</div>
+      <div class="topic">TCP 粘包/拆包处理</div>
+      <div class="exp"><p>TCP 是字节流没有消息边界：协议 = 4 字节长度 + 消息体；收到数据按长度解析，不足（半包）留在缓冲区等下一批。</p></div>
+      <div class="hook">"快递单上写包裹大小，拆不完的先放驿站。"</div>
+    </div>
+    <div class="card" data-tags="心跳 断线重连 超时 指数退避">
+      <div class="mne">定期发心跳，超时判断线，指数退避重连</div>
+      <div class="topic">心跳与断线重连</div>
+      <div class="exp"><p>定期发 Ping 探测连接；超时判定断线；重连成功后服务器下发快照/补状态；弱网加缓冲和预测。</p></div>
+      <div class="hook">"电梯里的对讲机，定期喊一声'还在吗'。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>十一、设计模式与架构</h2>
+  <div class="grid">
+    <div class="card" data-tags="单例 Instance Awake 查重 DontDestroyOnLoad">
+      <div class="mne">Instance 属性，Awake 查重，DontDestroy 常驻</div>
+      <div class="topic">MonoBehaviour 单例三件套（AudioManager）</div>
+      <div class="exp"><p><code>static Instance</code> + <code>Awake</code> 里查重销毁重复实例 + <code>DontDestroyOnLoad</code> 跨场景常驻。3DActGame 的 AudioManager 就是这么写的。</p></div>
+      <div class="hook">"全场只许有一个管家，多了就开除。"</div>
+    </div>
+    <div class="card" data-tags="观察者 事件 发布订阅 反注册 解耦">
+      <div class="mne">数据只发事件，UI 只管订阅，销毁记得反注册</div>
+      <div class="topic">观察者模式 / 事件解耦</div>
+      <div class="exp"><p>发布方不认识订阅方；UI 订阅数据事件被动刷新；<code>OnDisable</code>/<code>OnDestroy</code> 反注册防泄漏。KitchenChaos 的 <code>OnRecipeSpawned</code> 同时驱动订单 UI 和 AI。</p></div>
+      <div class="hook">"广播喊一声，谁要谁举手。"</div>
+    </div>
+    <div class="card" data-tags="FSM 状态机 状态模式 切换 ChangeState">
+      <div class="mne">状态封装方法，ChangeState 统一切换</div>
+      <div class="topic">状态模式（FSM）</div>
+      <div class="exp"><p>把每个状态的行为封装成独立类/方法，用统一入口切换，状态间不互相干扰。3DActGame 敌人五状态（呆巡追攻挨）、KitchenChaos AI 四状态。</p></div>
+      <div class="hook">"一个人一个工位，切换走前台登记。"</div>
+    </div>
+    <div class="card" data-tags="数据驱动 ScriptableObject 配置 分离 热更">
+      <div class="mne">配置与逻辑分离，改数值不重编译</div>
+      <div class="topic">数据驱动（ScriptableObject / 配置表）</div>
+      <div class="exp"><p>数值放配置（SO/JSON），代码只读配置：改数值不用改代码、可热更、策划可自测。KitchenChaos 的 RecipeSO、3DActGame 的 AudioClipRefsSO。</p></div>
+      <div class="hook">"把数字从代码里赶出去，住进配置表。"</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>十二、你的项目专属口诀</h2>
+  <div class="grid">
+    <div class="card" data-tags="敌人 AI FSM 3DActGame 状态 呆 巡 追 攻 挨">
+      <div class="mne">呆 · 巡 · 追 · 攻 · 挨</div>
+      <div class="topic">3DActGame 敌人 FSM 五状态</div>
+      <div class="exp"><p><code>Idle(呆)</code> → <code>Patrol(巡)</code> → <code>Pursuit(追)</code> → <code>Attack(攻)</code> → <code>GetHit(挨)</code>。触发条件：距离、冷却、动画事件。</p></div>
+      <div class="hook">"先发呆，再巡逻，看到你就追，追上就砍，砍完就挨打。"</div>
+    </div>
+    <div class="card" data-tags="AI 状态机 KitchenChaos 呆 走 切 等">
+      <div class="mne">呆 · 走 · 切 · 等</div>
+      <div class="topic">KitchenChaos AI 显式状态机四状态</div>
+      <div class="exp"><p><code>Idle(呆)</code> → <code>MovingToTarget(走)</code> → <code>Cutting(切)</code> → <code>Waiting(等)</code>。每个状态一个 <code>Update*()</code> 方法，<code>ChangeState()</code> 统一切换。</p></div>
+      <div class="hook">"从散落 if-else 重构来的——单文件 500 行的教训。"</div>
+    </div>
+    <div class="card" data-tags="差集 算法 订单 食材 AI 目标选择">
+      <div class="mne">订单减台面，等于真正缺</div>
+      <div class="topic">KitchenChaos AI 差集算法</div>
+      <div class="exp"><p><code>订单需要的 - 台子上已有的 = 真正缺的</code>（list.Contains 差集）；数据量大时换 HashSet O(1) 查找；配套"原料追溯"和"按订单锁定装盘"。</p></div>
+      <div class="hook">"先算缺什么再动手，别乱拿导致死锁。"</div>
+    </div>
+    <div class="card" data-tags="连招 ComboStage 排队 缓冲 Blend Tree 重置">
+      <div class="mne">排队缓冲，切回重置</div>
+      <div class="topic">3DActGame 五段连招系统</div>
+      <div class="exp"><p>代码侧 <code>ComboStage</code> + 排队攻击；动画切回 Blend Tree 时重置连招。解决"Exit Time 与代码推进不同步"的已知问题。</p></div>
+      <div class="hook">"连招像排队取号：按了就排着，窗口空了就上。"</div>
+    </div>
+    <div class="card" data-tags="3DActGame 武器 扇形检测 Animation Event IsTrigger">
+      <div class="mne">武器触发盒，敌人扇形检</div>
+      <div class="topic">3DActGame 两种伤害判定方式</div>
+      <div class="exp"><p>玩家武器：<code>Box Collider(IsTrigger) + Rigidbody(IsKinematic)</code>；敌人攻击：Animation Event 关键帧触发扇形检测（距离 + 角度 ±60°）。</p></div>
+      <div class="hook">"一个等撞上来，一个主动扫过去。"</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>Unity 客户端八股文 · 口诀速记卡 —— 配合《Unity客户端八股文-QA-结合项目》使用，先背口诀、再展开细节。</footer>
+
+<script>
+(function(){
+  var search = document.getElementById('search');
+  var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+  var modeBtn = document.getElementById('modeBtn');
+  var mode = false;
+
+  search.addEventListener('input', function(){
+    var q = search.value.trim().toLowerCase();
+    cards.forEach(function(c){
+      var t = (c.getAttribute('data-tags') || '').toLowerCase();
+      var txt = (c.textContent || '').toLowerCase();
+      c.classList.toggle('hidden', q !== '' && t.indexOf(q) === -1 && txt.indexOf(q) === -1);
+    });
+  });
+
+  modeBtn.addEventListener('click', function(){
+    mode = !mode;
+    document.body.classList.toggle('mode', mode);
+    modeBtn.textContent = mode ? '展开解释' : '背口诀模式（隐藏解释）';
+  });
+})();
+</script>
+</body>
+</html>
