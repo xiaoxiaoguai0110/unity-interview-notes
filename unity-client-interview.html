@@ -166,7 +166,6 @@ td code { font-family: 'JetBrainsMono', monospace; font-size: 0.82em; color: var
 /* Diagrams */
 .diagram { margin: 22px 0; background: var(--bg2); border: 1px solid var(--rule); border-radius: 8px; padding: 18px; }
 .diagram figcaption { font-size: 0.82rem; color: var(--muted); margin-top: 10px; text-align: center; }
-.diagram .mermaid { display: flex; justify-content: center; }
 
 /* Compare grid */
 .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
@@ -274,6 +273,7 @@ section.chapter { scroll-margin-top: 24px; }
 
 /* Code-first study layer */
 .code-caption{margin:16px 0 -14px;color:#64748b;font-size:12px;font-weight:700;letter-spacing:.04em}
+.life-flow{padding:8px 4px}.life-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:10px 0}.life-node{padding:9px 12px;border:1px solid #b7d4f4;border-radius:8px;background:#eef6ff;color:#1e3a5f;font-family:'JetBrainsMono',monospace;font-size:13px;text-align:center}.life-node.green{background:#ecfdf5;border-color:#a7e3c5;color:#166534}.life-node.orange{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.life-arrow{color:#64748b;font-weight:700}.life-note{margin:8px auto;color:#64748b;font-size:13px;text-align:center}.life-divider{height:1px;margin:14px 8%;background:#dbe4ee}@media(max-width:700px){.life-row{flex-direction:column}.life-arrow{transform:rotate(90deg)}}
 </style>
 </head>
 <body class="has-sidebar">
@@ -516,24 +516,14 @@ method.<span class="fn">Invoke</span>(player, <span class="kw">null</span>);
     <div class="a">
       <p>初始化阶段：<code class="inline">Awake</code> → <code class="inline">OnEnable</code> → <code class="inline">Start</code>。物理阶段：<code class="inline">FixedUpdate</code>（固定频率）。输入与逻辑：<code class="inline">Update</code> → <code class="inline">LateUpdate</code>。渲染阶段：<code class="inline">OnPreCull</code> → <code class="inline">OnPreRender</code> → <code class="inline">OnPostRender</code>。销毁阶段：<code class="inline">OnDisable</code> → <code class="inline">OnDestroy</code>。</p>
       <div class="diagram">
-        <pre class="mermaid">
-flowchart TD
-    A[实例化 Instantiate] --> B["Awake()<br/>对象已创建，本帧立即调用"]
-    B --> C{enabled?}
-    C -- 是 --> D["OnEnable()<br/>每次启用都调用"]
-    D --> E["Start()<br/>仅首次启用、在首帧Update前"]
-    E --> F["FixedUpdate()<br/>固定时间步 默认0.02s"]
-    F --> G["Update()<br/>每帧逻辑"]
-    G --> H["LateUpdate()<br/>每帧、在所有Update后 适合跟随相机"]
-    H --> I{渲染一帧}
-    I --> F
-    C -- 否 --> J[等待启用]
-    J --> D
-    K[Disable /销毁] --> L["OnDisable()"]
-    L --> M{对象彻底销毁?}
-    M -- 是 --> N["OnDestroy()"]
-    M -- 否 --> J
-        </pre>
+        <div class="life-flow">
+          <div class="life-row"><span class="life-node green">Instantiate<br><small>实例化对象</small></span><span class="life-arrow">→</span><span class="life-node">Awake()<br><small>初始化自身数据</small></span><span class="life-arrow">→</span><span class="life-node">OnEnable()<br><small>对象启用时</small></span><span class="life-arrow">→</span><span class="life-node green">Start()<br><small>首帧 Update 前</small></span></div>
+          <div class="life-note">Start 之后进入每帧循环</div>
+          <div class="life-row"><span class="life-node orange">FixedUpdate()<br><small>固定时间步，物理</small></span><span class="life-arrow">→</span><span class="life-node">Update()<br><small>每帧逻辑</small></span><span class="life-arrow">→</span><span class="life-node">LateUpdate()<br><small>跟随相机/收尾</small></span><span class="life-arrow">→</span><span class="life-node green">渲染一帧</span><span class="life-arrow">↺</span></div>
+          <div class="life-divider"></div>
+          <div class="life-row"><span class="life-node orange">Disable / 销毁</span><span class="life-arrow">→</span><span class="life-node">OnDisable()</span><span class="life-arrow">→</span><span class="life-node">对象彻底销毁？</span><span class="life-arrow">→ 是 →</span><span class="life-node green">OnDestroy()</span></div>
+          <div class="life-note">如果只是暂时禁用，之后重新启用会再次进入 OnEnable；Start 通常不重复。</div>
+        </div>
         <figcaption>图 2-1：MonoBehaviour 生命周期与各阶段回调顺序</figcaption>
       </div>
       <ul>
@@ -1382,8 +1372,6 @@ TCP: <span class="fn">Send</span>(reliableMessage); <span class="cmt">// 有序�
   </div>
 </footer>
 
-<script src="./_shared/js/mermaid.min.js"></script>
-<script>mermaid.initialize({ startOnLoad: true, theme: 'neutral', securityLevel: 'loose', flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' } });</script>
 <script>
 (function() {
   // ---- Mobile sidebar toggle ----
