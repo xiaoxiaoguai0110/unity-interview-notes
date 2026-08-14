@@ -175,7 +175,7 @@ while i < n:
         qtext = s[2:]
         if qtext.endswith(u'**'):
             qtext = qtext[:-2]
-        body.append(u'<details class="qa"><summary>%s</summary><div class="qa-ans">' % inline(qtext))
+        body.append(u'<details class="qa" open><summary>%s</summary><div class="qa-ans">' % inline(qtext))
         ans_html, i = parse_blocks(lines, i + 1, n)
         body.append(ans_html)
         body.append(u'</div></details>')
@@ -240,12 +240,13 @@ tbody tr:nth-child(even){background:#f8fafc}
 .qa-tools{margin:12px 0 8px;display:flex;gap:8px;flex-wrap:wrap}
 .qa-tools button{padding:6px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#334155;font-size:13px;cursor:pointer}
 .qa-tools button:hover{border-color:#2563eb;color:#2563eb}
-details.qa{border:1px solid #e2e8f0;border-radius:10px;background:#fbfcff;margin:10px 0;overflow:hidden}
-details.qa summary{cursor:pointer;padding:12px 16px;font-weight:600;color:#0f172a;list-style:none;display:flex;align-items:center;gap:8px}
+details.qa{border:0;border-left:4px solid #4aa39c;border-radius:0 10px 10px 0;background:#f1f4f8;margin:18px 0;overflow:hidden}
+details.qa summary{cursor:pointer;padding:15px 18px;font-weight:700;color:#0f172a;list-style:none;display:flex;align-items:center;gap:12px;font-size:16px;line-height:1.5}
 details.qa summary::-webkit-details-marker{display:none}
-details.qa summary::before{content:"\\25B8";color:#2563eb;transition:transform .15s;display:inline-block}
-details.qa[open] summary::before{transform:rotate(90deg)}
-details.qa .qa-ans{margin:0;padding:12px 16px 14px 40px;border-top:1px dashed #e2e8f0;color:#374151}
+details.qa summary::before{content:"Q";color:#3b9b95;font-size:16px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;min-width:18px}
+details.qa .qa-ans{margin:0;padding:2px 18px 18px 0;border-top:0;background:#fff;color:#172033}
+details.qa .qa-ans p,details.qa .qa-ans ul,details.qa .qa-ans ol,details.qa .qa-ans blockquote,details.qa .qa-ans .tbl-wrap{margin-left:0}
+details.qa .qa-ans blockquote{margin-top:16px;margin-bottom:16px;padding:11px 14px;background:#fff8ef;border:1px solid #f1c28b;border-left:4px solid #bd6d28;border-radius:0 8px 8px 0;color:#4b2b18}
 details.qa .qa-ans pre{background:#111c33}
 body.hide-ans details.qa .qa-ans{display:none}
 body.hide-ans details.qa .qa-ans.show{display:block}
@@ -367,7 +368,7 @@ html = PAGE_HEAD + toc_html + PAGE_MID + u''.join(body) + PAGE_TAIL
 with io.open(OUT, 'w', encoding='utf-8') as f:
     f.write(html)
 
-qa_opens = html.count(u'<details class="qa">')
+qa_opens = html.count(u'<details class="qa"')
 qa_closes = html.count(u'</details>')
 pre_blocks = html.count(u'<pre><code>')
 print('OK %s: %d bytes | qa %d/%d | code blocks %d | toc %d' % (
