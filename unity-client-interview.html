@@ -271,6 +271,9 @@ section.chapter { scroll-margin-top: 24px; }
 .project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.project-card{padding:18px;border-radius:12px;background:#fff;border:1px solid #e2e8f0}.project-card h3{margin:0 0 8px;color:#0f766e}.project-card p{margin:6px 0;color:#475569;font-size:14px}
 .project-flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:16px 0 4px}.project-node{padding:9px 12px;border-radius:9px;background:#eef6ff;border:1px solid #b7d4f4;color:#1e3a5f;font-size:13px;text-align:center}.project-node.green{background:#ecfdf5;border-color:#a7e3c5;color:#166534}.project-node.orange{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.project-arrow{color:#64748b;font-weight:700}.project-case{margin:16px 0 4px;padding:14px 16px;border-left:4px solid #7c3aed;border-radius:0 9px 9px 0;background:#faf7ff;color:#3f3f46;font-size:14px}.project-case strong{color:#6d28d9}.project-case code{background:#ede9fe;color:#5b21b6;padding:1px 4px;border-radius:4px}
 @media(max-width:700px){.project-grid{grid-template-columns:1fr}.project-lab{padding:18px}.project-flow{flex-direction:column}.project-arrow{transform:rotate(90deg)}}
+
+/* Code-first study layer */
+.code-caption{margin:16px 0 -14px;color:#64748b;font-size:12px;font-weight:700;letter-spacing:.04em}
 </style>
 </head>
 <body class="has-sidebar">
@@ -355,7 +358,14 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>值类型与引用类型的区别是什么？分别在栈还是堆上分配？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">struct Damage { public int value; }
+class Player { public int hp; }
+
+var x = new Player();
+var y = x;          // 复制引用，不是复制对象
+y.hp = 0;           // x.hp 也变成 0
+var d1 = new Damage();
+var d2 = d1;        // 复制一份值，d2.value 改变不影响 d1</pre>
       <p><strong>值类型</strong>（<code class="inline">struct</code>、<code class="inline">enum</code>、基本类型 <code class="inline">int/float/bool</code> 等）<mark class="key">直接存储数据本身</mark>，赋值时<mark class="em">按值拷贝</mark>；<strong>引用类型</strong>（<code class="inline">class</code>、<code class="inline">string</code>、数组、委托等）存储的是对象的<mark class="key">引用（地址）</mark>，赋值时拷贝引用，指向堆上同一对象。</p>
       <ul>
         <li>值类型变量通常分配在<strong>栈</strong>上（作为局部变量时），生命周期随作用域结束自动回收；但作为引用类型的字段时会被打包到堆上。</li>
@@ -368,7 +378,12 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>什么是装箱和拆箱？有什么性能影响？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">int damage = 100;
+object boxed = damage;    // 装箱：堆上创建对象并复制 100
+int value = (int)boxed;   // 拆箱：检查类型，再复制回 int
+
+// 高频路径里尽量使用泛型，避免 object 带来的装箱
+List&lt;int&gt; damages = new List&lt;int&gt;();</pre>
       <p><strong>装箱（Boxing）</strong>：将值类型转换为 <code class="inline">object</code> 或接口引用，会在堆上创建一个新对象并拷贝值，产生 GC 压力。<strong>拆箱（Unboxing）</strong>：将 <code class="inline">object</code> 强转回值类型，从堆对象中拷贝数据，伴随类型检查开销。</p>
 <pre class="code"><span class="kw">int</span> i = <span class="num">42</span>;
 <span class="type">object</span> o = i;        <span class="cmt">// 装箱：堆上分配，产生 GC</span>
@@ -379,7 +394,14 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>string 与 StringBuilder 的区别？为什么字符串拼接要用 StringBuilder？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">string text = "";
+for (int i = 0; i &lt; count; i++)
+    text += i;             // 每次拼接都可能创建新字符串
+
+var builder = new StringBuilder();
+for (int i = 0; i &lt; count; i++)
+    builder.Append(i);     // 复用内部缓冲区
+string result = builder.ToString();</pre>
       <p><code class="inline">string</code> 是<mark class="key">不可变（immutable）</mark>引用类型，每次拼接（<code class="inline">+</code> / <code class="inline">Concat</code>）都会在堆上创建新字符串对象，旧对象变为垃圾。循环内拼接 N 次会产生 O(N) 个临时对象，是 GC 元凶之一。</p>
       <p><code class="inline">StringBuilder</code> 内部维护可变字符缓冲区，<mark class="key">在容量内追加不产生新对象</mark>，适合多次拼接。Unity 中还可用 <code class="inline">string.Format</code>（单次拼接可接受）或 C# 6 字符串插值 <code class="inline">$"x={i}"</code>（编译期优化为 <code class="inline">string.Format</code>）。</p>
 <pre class="code"><span class="cmt">// 反例：循环拼接，每次产生新字符串</span>
@@ -395,7 +417,14 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>委托、事件与 Action/Func 的关系？事件和委托的区别？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>KitchenChaos 用 <code>OrderManager.OnRecipeSpawned</code> 通知订单 UI 和 AI；3DActGame 的 <code>Health.OnHealthChanged</code> 通知血条和敌人受击状态。发布者只负责发事件，订阅者各自响应，减少模块直接引用。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">public event Action&lt;int&gt; OnHealthChanged;
+
+// Health 负责发布
+OnHealthChanged?.Invoke(currentHp);
+
+// UI 和 AI 各自订阅
+health.OnHealthChanged += UpdateHealthBar;
+health.OnHealthChanged += EnterGetHitState;</pre><div class="project-case"><strong>项目对应：</strong>KitchenChaos 用 <code>OrderManager.OnRecipeSpawned</code> 通知订单 UI 和 AI；3DActGame 的 <code>Health.OnHealthChanged</code> 通知血条和敌人受击状态。发布者只负责发事件，订阅者各自响应，减少模块直接引用。</div>
       <p><strong>委托</strong>是类型安全的函数指针，<code class="inline">delegate</code> 可持有多个方法（多播）。<code class="inline">Action&lt;T&gt;</code>（无返回值）和 <code class="inline">Func&lt;T,TResult&gt;</code>（有返回值）是框架内置的泛型委托，避免自定义 <code class="inline">delegate</code> 类型。</p>
       <p><strong>事件（event）</strong>是对委托的<mark class="key">封装</mark>，本质是 <code class="inline">private</code> 委托 + 两个访问器（add/remove）：</p>
       <ul>
@@ -408,7 +437,13 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>泛型有什么好处？什么是泛型约束？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">class Pool&lt;T&gt; where T : Component
+{
+    private Stack&lt;T&gt; items = new Stack&lt;T&gt;();
+    public T Get() =&gt; items.Count &gt; 0 ? items.Pop() : Create&lt;T&gt;();
+}
+
+// 同一套逻辑可复用于 Bullet、Effect、Enemy</pre>
       <p>泛型在<mark class="key">编译期确定类型</mark>，相比 <code class="inline">object</code> 容器：① 避免装箱拆箱与 GC；② 类型安全，编译期检查；③ 代码复用。<code class="inline">List&lt;int&gt;</code> 比 <code class="inline">ArrayList</code> 存 int 既无装箱又类型安全。</p>
       <p>泛型约束（<code class="inline">where</code>）限制类型参数范围：</p>
 <pre class="code"><span class="kw">where</span> T : <span class="type">class</span>          <span class="cmt">// 引用类型</span>
@@ -421,7 +456,12 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>反射的原理与应用场景？有什么缺点？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Type type = typeof(Player);
+MethodInfo method = type.GetMethod("Attack");
+method.Invoke(player, null);
+
+// 能力强但慢、有类型安全风险；战斗 Update 中不应反复 Invoke
+// 编辑器工具、序列化、配置驱动场景更适合使用反射</pre>
       <p>反射通过 <code class="inline">System.Reflection</code> 在运行时动态获取类型元数据、创建实例、调用方法/字段。应用场景：序列化框架、编辑器扩展、依赖注入、热更新绑定、协议解析等。</p>
       <p>缺点：① 性能差（比直接调用慢几十倍），频繁反射应缓存 <code class="inline">MethodInfo</code> 或用 <code class="inline">Expression Tree</code> / <code class="inline">Delegate.CreateDelegate</code> 优化；② 破坏类型安全，编译期无法检查；③ 在 IL2CPP/AOT 平台（iOS）可能因裁剪导致元数据丢失，需用 <code class="inline">link.xml</code> 保留。</p>
     </div>
@@ -429,7 +469,12 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>ref / out / in 参数修饰符的区别？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">void Add(ref int value) { value += 1; }
+void Create(out Player player) { player = new Player(); }
+void Read(in Vector3 position) { /* 只读，避免大结构体复制 */ }
+
+int n = 1;
+Add(ref n);       // 调用后 n == 2</pre>
       <div class="table-wrap">
       <table>
         <thead><tr><th>修饰符</th><th>方向</th><th>调用前需赋值</th><th>方法内必须赋值</th><th>典型用途</th></tr></thead>
@@ -446,7 +491,14 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>协程（yield）的本质是什么？与多线程有何区别？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">IEnumerator WaitAndAttack()
+{
+    yield return new WaitForSeconds(0.5f); // 暂停，不阻塞主线程
+    Attack();
+}
+
+StartCoroutine(WaitAndAttack());
+// Unity 每帧恢复协程，直到下一个 yield 条件满足</pre>
       <p>C# 的 <code class="inline">yield</code> 由编译器生成一个<mark class="key">状态机</mark>类（实现 <code class="inline">IEnumerator</code>），每次 <code class="inline">MoveNext()</code> 推进到下一个 <code class="inline">yield</code>，并保存当前局部变量状态。Unity 协程基于此，由引擎在每帧检查 yield 条件（<code class="inline">WaitForSeconds</code>、<code class="inline">WaitForEndOfFrame</code> 等）决定何时恢复。</p>
       <p><strong>协程不是线程</strong>：协程仍在主线程执行，<mark class="em">不是并行</mark>，只是“分时间片”的异步逻辑。它不能利用多核，也不能在协程里调用大部分 Unity API 之外阻塞主线程。耗时计算应交给线程/Job System，协程只适合“等待 + 主线程逻辑”。</p>
     </div>
@@ -495,7 +547,12 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>GameObject 和 Component 是什么关系？GetComponent 的原理与开销？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>KitchenChaos 用 <code>BaseCounter</code> 抽象柜台，再由 ContainerCounter、CuttingCounter、StoveCounter 等组件重写交互；这是 Unity 组件式设计和 C# 多态的结合。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">GameObject counter = hit.collider.gameObject;
+BaseCounter baseCounter =
+    counter.GetComponent&lt;BaseCounter&gt;();
+
+if (baseCounter != null)
+    baseCounter.Interact(player); // 多态调用具体柜台逻辑</pre><div class="project-case"><strong>项目对应：</strong>KitchenChaos 用 <code>BaseCounter</code> 抽象柜台，再由 ContainerCounter、CuttingCounter、StoveCounter 等组件重写交互；这是 Unity 组件式设计和 C# 多态的结合。</div>
       <p>Unity 是<strong>组件化（Entity-Component）</strong>架构：<code class="inline">GameObject</code> 是容器（实体），本身没有行为；行为由挂载的 <code class="inline">Component</code> 提供。<code class="inline">Transform</code> 是每个 GameObject 必有的组件。<mark class="key">GameObject 是“是什么”，Component 是“能做什么”</mark>。</p>
       <p><code class="inline">GetComponent&lt;T&gt;()</code> 通过组件类型在对象的组件列表中查找。它有一定开销（native 调用 + 查找），<mark class="em">不应在 Update 每帧调用</mark>。正确做法是在 <code class="inline">Awake</code>/<code class="inline">Start</code> 中缓存引用：</p>
 <pre class="code"><span class="kw">private</span> <span class="type">Rigidbody</span> _rb;
@@ -506,7 +563,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>本地坐标系、世界坐标系与 Transform 的关系？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">transform.localPosition = new Vector3(0, 1, 0);
+Vector3 worldPos = transform.TransformPoint(localOffset);
+Vector3 localPos = transform.InverseTransformPoint(worldPos);
+
+// 子物体挂在手上时，用 localPosition 表示相对手部的位置</pre>
       <p><code class="inline">transform.position</code> / <code class="inline">rotation</code> / <code class="inline">lossyScale</code> 是<mark class="key">世界坐标</mark>；<code class="inline">localPosition</code> / <code class="inline">localRotation</code> / <code class="inline">localScale</code> 是相对于父节点的<mark class="key">本地坐标</mark>。父子层级构成变换树，子节点的世界变换 = 父节点世界变换 × 子节点本地变换。</p>
       <p>常用 API：<code class="inline">TransformPoint</code>（本地→世界）、<code class="inline">InverseTransformPoint</code>（世界→本地）、<code class="inline">LookAt</code>（朝向目标）、<code class="inline">Rotate</code>、<code class="inline">Translate</code>。<code class="inline">lossyScale</code> 是只读的（受父级缩放影响后无法唯一反推），无法直接赋值。</p>
     </div>
@@ -514,7 +575,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Time.deltaTime / Time.fixedDeltaTime / Time.timeScale 的区别与用途？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">transform.position += direction * speed * Time.deltaTime;
+
+// 视觉/逻辑逐帧更新：deltaTime
+// Rigidbody 物理：FixedUpdate + fixedDeltaTime
+// 暂停：Time.timeScale = 0；不受暂停影响的 UI 用 unscaledDeltaTime</pre>
       <div class="table-wrap">
       <table>
         <thead><tr><th>属性</th><th>含义</th><th>典型用途</th></tr></thead>
@@ -532,7 +597,16 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>协程的启动、停止与 yield 类型有哪些？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Coroutine cookingRoutine;
+cookingRoutine = StartCoroutine(Cook());
+
+IEnumerator Cook()
+{
+    yield return new WaitForSeconds(cookTime);
+    FinishCooking();
+}
+
+StopCoroutine(cookingRoutine); // 离开灶台或对象禁用时停止</pre>
       <p>启动：<code class="inline">StartCoroutine(IEnumerator)</code>；停止：<code class="inline">StopCoroutine(IEnumerator/字符串)</code>、<code class="inline">StopAllCoroutines()</code>、禁用/销毁 GameObject 自动停止。常用 yield 指令：</p>
       <ul>
         <li><code class="inline">yield return null</code> — 等待下一帧 Update 之后。</li>
@@ -554,7 +628,13 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Resources、AssetBundle、Addressables 各自的特点与适用场景？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">// Resources：路径固定，简单但资源容易失控
+var prefab = Resources.Load&lt;GameObject&gt;("Prefabs/Player");
+
+// Addressables：通过 key 异步加载，适合资源依赖和分包
+Addressables.LoadAssetAsync&lt;GameObject&gt;("PlayerPrefab");
+
+// KitchenChaos 的食材/配方更适合 ScriptableObject 数据驱动</pre>
       <div class="table-wrap">
       <table>
         <thead><tr><th>方式</th><th>打包位置</th><th>优点</th><th>缺点</th></tr></thead>
@@ -571,7 +651,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>AssetBundle 的加载方式有哪些？LoadFromMemory / LoadFromFile / LoadFromStream 的区别？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">AssetBundle bundle = AssetBundle.LoadFromFile(path);
+GameObject prefab = bundle.LoadAsset&lt;GameObject&gt;("Enemy");
+Instantiate(prefab);
+
+// File 适合本地文件；Memory 会增加内存峰值；Stream 适合自定义读取</pre>
       <ul>
         <li><code class="inline">LoadFromFile</code>：从磁盘路径直接加载，<mark class="key">内存占用最低</mark>，推荐用于本地已下载的 AB。</li>
         <li><code class="inline">LoadFromMemory</code>：先读入 byte[] 再加载，会多一份完整内存拷贝，适合加密解密场景。</li>
@@ -584,7 +668,13 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>AssetBundle 的依赖与冗余是怎么回事？如何解决？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">MainBundle
+  ├── SharedMaterials.bundle
+  └── Characters.bundle
+
+// 构建时统一依赖；加载时先加载依赖，再加载主包
+foreach (var dependency in manifest.GetAllDependencies(main))
+    LoadBundle(dependency);</pre>
       <p>当一个 AB 中的 prefab 引用了另一个 AB 中的材质/贴图，就形成<strong>依赖</strong>。加载该 prefab 前<mark class="key">必须先加载其依赖的所有 AB</mark>（通过 <code class="inline">AssetBundleManifest.GetAllDependencies</code>），否则资源丢失（粉色贴图）。</p>
       <p><strong>冗余</strong>：若多个 AB 各自独立打包了同一份贴图（没有抽成公共依赖 AB），该贴图会在每个 AB 里各存一份，造成包体与内存翻倍。解决：把共享资源打进单独的公共 AB（shared AB），其它 AB 依赖它；或使用 Addressables 的“Group + 引用计数”自动去重。</p>
       <div class="callout warn"><span class="label amber">常见坑</span><p>整包打包（把所有资源打进一个 AB）虽无冗余但无法热更与按需加载；切得太碎又带来依赖爆炸与加载次数过多。需按“功能模块 + 共享资源分层”组织 AB 结构。</p></div>
@@ -593,7 +683,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Resources.UnloadUnusedAssets 和 GC.Collect 的区别？什么时候调用？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Destroy(oldPanel);
+yield return Resources.UnloadUnusedAssets(); // Unity 资源引用清理
+GC.Collect();                               // 只请求托管 GC
+
+// 两者解决的问题不同，不能把 GC.Collect 当成资源卸载</pre>
       <p><code class="inline">Resources.UnloadUnusedAssets()</code> 卸载引擎侧“没有任何引用”的资源（贴图、网格、材质等），是 Unity 层资源回收；<code class="inline">GC.Collect()</code> 回收 C# 托管堆上无引用的对象。两者配合才能彻底释放内存：</p>
       <p>典型流程：先置空 C# 引用 → <code class="inline">GC.Collect()</code> 释放托管对象 → <code class="inline">Resources.UnloadUnusedAssets()</code> 释放引擎资源（因为要等 C# 引用先消失，引擎资源才“无引用”）。切换场景时引擎会自动执行一遍，手动调用时应异步并避免每帧调用（开销大）。</p>
     </div>
@@ -601,7 +695,20 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>什么是对象池？为什么能提升性能？实现要点是什么？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Queue&lt;Bullet&gt; pool = new Queue&lt;Bullet&gt;();
+
+Bullet Get()
+{
+    Bullet bullet = pool.Count &gt; 0 ? pool.Dequeue() : CreateBullet();
+    bullet.gameObject.SetActive(true);
+    return bullet;
+}
+
+void Release(Bullet bullet)
+{
+    bullet.gameObject.SetActive(false);
+    pool.Enqueue(bullet);
+}</pre>
       <p>对象池（Object Pool）预先创建一批对象复用，避免运行时频繁 <code class="inline">Instantiate</code>/<code class="inline">Destroy</code>。频繁实例化会带来：① 实例化开销（组件初始化、内存分配）；② 销毁后 GC；③ 内存碎片化。池化后对象“取出-归还”而非“创建-销毁”，<mark class="key">消除运行时分配与 GC</mark>。</p>
       <p>实现要点：</p>
       <ul>
@@ -635,7 +742,12 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>什么是 DrawCall？SetPassCall 与 DrawCall 的区别？为什么降低 DrawCall 重要？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">// 一个材质/网格组合通常需要一次提交
+for each Renderer:
+    SetPass(material); // 切换渲染状态
+    Draw(mesh);        // 提交几何体
+
+// 目标：减少材质切换和批次数量，而不是盲目减少所有物体</pre>
       <p><strong>DrawCall</strong>是 CPU 向 GPU 下达的一次绘制命令（<code class="inline">DrawIndexed</code> 等）。<strong>SetPassCall</strong>是切换渲染 Pass（材质/Shader）的命令。每次切换材质会触发 SetPass，开销通常比 DrawCall 本身更大（涉及 GPU 状态切换、着色器编译）。</p>
       <p>DrawCall 高的瓶颈在 <mark class="key">CPU</mark>（提交命令开销），而非 GPU。移动端每帧 DrawCall 控制在几百以内为宜。降低 DrawCall 的核心是<mark class="key">合批（Batching）</mark>——把多个对象合并为一次绘制。</p>
     </div>
@@ -643,7 +755,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>静态合批、动态合批、GPU Instancing、SRP Batcher 的原理与适用条件？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">// GPU Instancing：同材质的大量相同网格
+Graphics.DrawMeshInstanced(mesh, 0, material, matrices);
+
+// SRP Batcher：让相同 Shader 变体的材质常量更新更高效
+// KitchenChaos 中重复柜台/食材可优先检查材质和网格是否满足批处理条件</pre>
       <div class="table-wrap">
       <table>
         <thead><tr><th>方式</th><th>原理</th><th>条件/限制</th><th>开销</th></tr></thead>
@@ -661,7 +777,13 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>什么是 Overdraw？如何检测与优化？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">// UI 叠加越多，同一像素被片元着色器执行越多次
+Background
+  + Panel
+    + Mask
+      + Text
+
+// Frame Debugger 看批次；Overdraw 视图看像素重复绘制</pre>
       <p><strong>Overdraw（过度绘制）</strong>指同一像素被多次绘制。透明物体（UI、粒子、玻璃）叠加、大量重叠的特效会造成 GPU 片元处理压力。<mark class="key">Overdraw 高的瓶颈在 GPU</mark>。</p>
       <p>检测：Scene 视图切到 <code class="inline">Overdraw</code> 模式，或 Frame Debugger / Render Doc。优化：减少透明物体层数与面积；UI 尽量避免重叠（同一区域叠多层半透明图）；粒子控制数量与贴图大小；用 <code class="inline">Occlusion Culling</code> 剔除被遮挡的不透明物体。</p>
     </div>
@@ -669,7 +791,12 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>LOD、遮挡剔除、视锥剔除的区别？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">if (!camera.IsVisible(renderer))
+    SkipRender();          // 视锥外不渲染
+else if (distance &gt; 30)
+    renderer.SetLOD(1);   // 远处使用低模
+
+// 遮挡剔除还要判断“被墙挡住”，不是只看距离</pre>
       <ul>
         <li><strong>视锥剔除（Frustum Culling）</strong>：相机视锥外的物体不渲染，<mark class="key">引擎自动</mark>执行，基于包围盒。</li>
         <li><strong>遮挡剔除（Occlusion Culling）</strong>：视锥内但被其它物体挡住的也不渲染，需烘焙 Occlusion 数据，适合室内/城市场景。</li>
@@ -681,7 +808,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>前向渲染与延迟渲染的区别？各自适用场景？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Forward: 物体 -&gt; 直接计算光照 -&gt; 输出颜色
+Deferred: 几何阶段写 GBuffer -&gt; 光照阶段统一计算
+
+// 角色数量少、透明物体多：Forward 常更简单
+// 大量动态光源、硬表面场景：Deferred 更有优势</pre>
       <div class="compare">
         <div class="card"><h4>前向渲染 Forward</h4><p>每个物体逐个绘制并计算光照。光源数量越多开销线性增长。适合光源少、半透明、移动端。Unity 默认/URP 默认。</p></div>
         <div class="card"><h4>延迟渲染 Deferred</h4><p>先把几何渲染到 G-Buffer（位置/法线/颜色），再统一计算光照。光源数与物体数解耦，多光源高效。不支持 MSAA、半透明需回退前向、G-Buffer 带宽大。</p></div>
@@ -707,7 +838,12 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Rigidbody 的几种 BodyType / 插值模式是什么？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Rigidbody body = GetComponent&lt;Rigidbody&gt;();
+body.interpolation = RigidbodyInterpolation.Interpolate;
+
+// Dynamic：受物理驱动
+// Kinematic：脚本/动画驱动，可移动但不受力
+// FixedUpdate 中 MovePosition，避免在 Update 里直接改物理对象</pre>
       <p>3D 中 <code class="inline">Rigidbody</code> 有 <code class="inline">isKinematic</code> 开关；2D 中有 <code class="inline">BodyType2D</code>（Dynamic / Kinematic / Static）。</p>
       <ul>
         <li><strong>Dynamic（动态）</strong>：受物理引擎模拟，有质量、受力、碰撞响应。</li>
@@ -720,7 +856,17 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Collision 和 Trigger 的区别？对应的回调函数？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>KitchenChaos 需要处理玩家与柜台、AI 与柜台的占用关系；3DActGame 的武器碰撞体在攻击窗口开启，配合伤害检测和 <code>DisableDamage</code> 延迟关闭，避免整段动画持续造成伤害。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">void OnCollisionEnter(Collision collision)
+{
+    TakeDamage(collision.relativeVelocity.magnitude);
+}
+
+void OnTriggerEnter(Collider other)
+{
+    if (other.CompareTag("HitBox")) TakeDamage(10);
+}
+
+// Trigger 不产生实体阻挡，适合攻击范围、拾取范围和检测区</pre><div class="project-case"><strong>项目对应：</strong>KitchenChaos 需要处理玩家与柜台、AI 与柜台的占用关系；3DActGame 的武器碰撞体在攻击窗口开启，配合伤害检测和 <code>DisableDamage</code> 延迟关闭，避免整段动画持续造成伤害。</div>
       <div class="table-wrap">
       <table>
         <thead><tr><th></th><th>Collision（碰撞）</th><th>Trigger（触发）</th></tr></thead>
@@ -738,7 +884,14 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Raycast 射线检测的原理与常用重载？如何优化？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>可把 KitchenChaos 的“目标柜台是否可交互”和 3DActGame 的“攻击范围检测”理解成空间查询：先筛选目标，再判断距离、阻挡和可操作条件，避免只依赖碰撞回调。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Ray ray = camera.ScreenPointToRay(Input.mousePosition);
+if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, counterMask))
+{
+    var counter = hit.collider.GetComponent&lt;BaseCounter&gt;();
+    if (counter != null) counter.Interact(player);
+}
+
+// 用 LayerMask 缩小检测范围，避免每次命中都扫描无关物体</pre><div class="project-case"><strong>项目对应：</strong>可把 KitchenChaos 的“目标柜台是否可交互”和 3DActGame 的“攻击范围检测”理解成空间查询：先筛选目标，再判断距离、阻挡和可操作条件，避免只依赖碰撞回调。</div>
       <p><code class="inline">Physics.Raycast</code> 从一点沿方向发射射线，返回是否命中及命中信息（<code class="inline">RaycastHit</code>：点、法线、距离、碰撞体）。</p>
 <pre class="code"><span class="cmt">// 常用重载：起点、方向、最大距离、层级掩码</span>
 <span class="kw">if</span> (<span class="type">Physics</span>.Raycast(origin, direction, <span class="kw">out</span> hit, maxDistance, layerMask)) {
@@ -750,7 +903,13 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>CharacterController 与 Rigidbody 角色控制各有什么优劣？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">// CharacterController：主动控制，不会自然受到力
+controller.Move(input * speed * Time.deltaTime);
+
+// Rigidbody：交给物理系统，适合需要受力、碰撞响应的对象
+rigidbody.MovePosition(nextPosition);
+
+// 3DActGame 玩家更适合明确的角色控制；可推动物理箱子时再考虑 Rigidbody</pre>
       <p><strong>CharacterController</strong>：专为角色设计，提供 <code class="inline">Move</code>/<code class="inline">SimpleMove</code>，自带坡度/台阶/胶囊碰撞处理，不受力但能被碰撞阻挡。<mark class="key">适合大多数动作/RPG 角色</mark>，可控性强，但不参与真实物理（不会被冲撞推动）。</p>
       <p><strong>Rigidbody 控制</strong>：参与完整物理模拟，受力、可被推动、碰撞响应真实，适合需要物理交互的场景（赛车、布娃娃），但调参难、易抖动、易穿墙。两者可结合：CharacterController 移动 + 额外物理体做受击反馈。</p>
     </div>
@@ -765,7 +924,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Canvas 的三种渲染模式是什么？分别适用什么场景？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>3DActGame 的玩家血条和敌人血条属于世界信息 UI：敌人血条只在距离小于 20m 时显示，减少无意义的 UI 更新；固定 HUD 则更适合 Screen Space - Overlay。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Canvas.renderMode = RenderMode.ScreenSpaceOverlay; // HUD
+canvas.renderMode = RenderMode.ScreenSpaceCamera; // 相机空间 UI
+canvas.renderMode = RenderMode.WorldSpace;        // 世界血条/场景 UI
+
+// 3DActGame 敌人血条跟随世界目标，通常使用 WorldSpace</pre><div class="project-case"><strong>项目对应：</strong>3DActGame 的玩家血条和敌人血条属于世界信息 UI：敌人血条只在距离小于 20m 时显示，减少无意义的 UI 更新；固定 HUD 则更适合 Screen Space - Overlay。</div>
       <div class="table-wrap">
       <table>
         <thead><tr><th>模式</th><th>特点</th><th>适用场景</th></tr></thead>
@@ -781,7 +944,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>UGUI 的 Rebuild 和 Rebatch 分别是什么？哪个开销更大？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">// 一个文本或布局变化可能触发
+Layout Rebuild -&gt; Graphic Rebuild -&gt; Canvas Rebatch
+
+// 把频繁变化的血条、计时器放到独立 Canvas，
+// 避免静态背景和整棵 UI 树一起重建</pre>
       <p><strong>Rebuild（重建）</strong>：当 UI 元素的顶点/布局变化（文字改变、Image 颜色变、布局重排）时，重新计算网格顶点。发生在 <mark class="key">单个 Canvas 内</mark>。</p>
       <p><strong>Rebatch（重批）</strong>：当 Canvas 内任意元素变化时，整个 Canvas 的网格需要重新合批（按材质/层级排序合并）。<mark class="em">即使只有一个小元素变化，整个 Canvas 都会 Rebatch</mark>，开销与 Canvas 规模成正比。</p>
       <p>优化核心：<mark class="key">拆分 Canvas</mark>。把高频变化（血条、倒计时、滚动列表）拆到独立子 Canvas，避免拖动整个静态 UI 一起 Rebatch。动态元素少的大静态 UI 用一个大 Canvas 即可。</p>
@@ -805,14 +972,27 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Sprite Atlas 图集的作用？为什么能优化？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">SpriteAtlas atlas = ...;
+// 多张小图合并到一张大纹理，减少纹理切换
+// 但图集过大也会增加显存和加载成本
+
+// UI 频繁使用的图标放同一图集，跨场景资源要规划依赖</pre>
       <p>图集把多张小 Sprite 合并成一张大贴图。作用：① 减少 DrawCall（同图集的 Sprite 共享材质可合批）；② 减少纹理切换开销；③ 降低显存碎片（但总像素数不变）。Unity 通过 <code class="inline">Sprite Atlas</code> 资源创建，运行时自动替换引用。<mark class="key">图集是 UGUI 合批的前提</mark>。注意大图集过大反而增加内存与加载时间，应按界面/功能模块切分图集。</p>
     </div>
   </div>
 
   <div class="qa">
     <div class="q"><h3>滚动列表（ScrollRect）性能如何优化？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">void Refresh(int first, int visibleCount)
+{
+    for (int i = 0; i &lt; visibleCount; i++)
+    {
+        int dataIndex = first + i;
+        cells[i].Bind(data[dataIndex]); // 复用可见 Cell
+    }
+}
+
+// 不要为几千条数据 Instantiate 几千个 UI 节点</pre>
       <p>朴素做法是 Instantiate 所有列表项，数据多时卡顿。优化方案：</p>
       <ul>
         <li><strong>对象池 + 可视化裁剪</strong>：只实例化可视区 + 缓冲区的少量 Item，滚动时复用（Unity 自带 <code class="inline">ScrollRect</code> 不做裁剪，需自己实现或用开源库如 LoopScrollView、SuperScrollView）。</li>
@@ -833,7 +1013,12 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Animator 和 Animation 的区别？什么时候用哪个？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">animator.SetFloat("Speed", velocity.magnitude);
+animator.SetInteger("ComboStage", comboStage);
+animator.SetTrigger("OnAttack");
+
+// Animator：状态机、混合树、过渡，适合角色复杂动画
+// Animation：简单剪辑播放，适合简单对象或旧项目</pre>
       <p><strong>Animation</strong>：单个动画片段直接播放，API 简单（<code class="inline">Play</code>），适合简单单向动画（UI 动画、开门）。<strong>Animator</strong>：基于<mark class="key">状态机</mark>，管理多个动画片段的切换、混合、过渡条件，适合角色（走/跑/跳/攻击切换）。</p>
       <p>Animator 底层也有一定开销（状态机评估、参数同步）。极简动画用 Animation 更省；需要复杂状态切换用 Animator。Animator 可通过 <code class="inline">Animator.StringToHash</code> 缓存参数哈希避免每帧字符串开销。</p>
     </div>
@@ -841,7 +1026,12 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Animator 状态机的过渡（Transition）和条件是什么？Has Exit Time 的作用？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>3DActGame 的玩家通过 <code>ComboStage</code> 和 <code>OnAttack</code> 参数推进五段连招；敌人通过 <code>MoveSpeed</code>、<code>AttackIndex</code> 和触发器切换移动、攻击、受击动画。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Idle --Speed &gt; 0.1--&gt; Move
+Move --OnAttack--&gt; Attack_1
+Attack_1 --ComboStage == 2--&gt; Attack_2
+Attack_1 --Has Exit Time--&gt; Idle
+
+// Has Exit Time 决定是否等当前动画播到指定时间再离开</pre><div class="project-case"><strong>项目对应：</strong>3DActGame 的玩家通过 <code>ComboStage</code> 和 <code>OnAttack</code> 参数推进五段连招；敌人通过 <code>MoveSpeed</code>、<code>AttackIndex</code> 和触发器切换移动、攻击、受击动画。</div>
       <p>Transition 是状态间的切换，由 Conditions（条件：参数 == / &gt; / &lt; 比较）触发。参数有 Float/Int/Bool/Trigger 四种，Trigger 是“一次性布尔”，触发后自动复位，适合攻击、受击等单次事件。</p>
       <p><code class="inline">Has Exit Time</code>：勾选后即使条件满足，也要等当前动画播到指定比例（Exit Time 0~1）才切换；不勾选则条件满足立即切换。<mark class="key">需要立即响应的切换应关掉 Has Exit Time</mark>（如受击打断），平滑衔接的可保留。Transition Duration 控制过渡混合时长，避免动作硬切。</p>
     </div>
@@ -863,7 +1053,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>动画层级（Layer）和 IK 是什么？有什么用？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Base Layer: locomotion + attack
+UpperBody Layer: weapon aim / attack mask
+IK: hand -&gt; weapon grip, foot -&gt; ground
+
+// 上半身攻击不应打断下半身移动，Layer Mask 可以拆开控制</pre>
       <p><strong>Layer</strong>：把不同身体部位的动画分层叠加，比如下半身走跑、上半身持枪射击。上层覆盖下层（可设 Mask 只影响部分骨骼，权重控制混合），实现上下半身独立动画。</p>
       <p><strong>IK（Inverse Kinematics，反向运动学）</strong>：给定末端（手/脚）目标位置，反推关节旋转。用于脚贴合不平地面、手抓握武器/方向盘。在 <code class="inline">OnAnimatorIK</code> 中用 <code class="inline">SetIKPosition</code>/<code class="inline">SetIKRotation</code> 设置目标。<mark class="key">IK 增加计算量</mark>，按需开启。</p>
     </div>
@@ -871,7 +1065,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>动画事件（Animation Event）和状态机脚本（State Machine Behaviour）的区别？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>敌人攻击动画的关键帧调用 <code>OnAttackHit()</code> 做扇形检测，动画结束调用 <code>OnAttackEnd()</code> 进入冷却。动画事件适合表达“动作发生到这一帧才真正命中”。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">// 攻击动画的关键帧
+OnAttackHit();   // 这一帧开启伤害检测
+OnAttackEnd();   // 动画结束，清理状态并进入冷却
+
+// 3DActGame 的伤害窗口应跟随动画时间，而不是整段 Update 都判定</pre><div class="project-case"><strong>项目对应：</strong>敌人攻击动画的关键帧调用 <code>OnAttackHit()</code> 做扇形检测，动画结束调用 <code>OnAttackEnd()</code> 进入冷却。动画事件适合表达“动作发生到这一帧才真正命中”。</div>
       <p><strong>Animation Event</strong>：挂在 Animation Clip 时间轴上，到指定帧触发指定函数，<mark class="key">与动画片段绑定</mark>（换模型共用片段时事件一致）。适合播放音效、特效、攻击判定帧等。</p>
       <p><strong>State Machine Behaviour</strong>：挂在状态机状态上的脚本，提供 <code class="inline">OnStateEnter/Exit/Update/Move/IK</code> 回调，<mark class="key">与状态绑定</mark>。适合状态进入/退出时的逻辑（如进入攻击状态锁定输入）。事件更轻、更贴动画帧；SMB 更适合状态级逻辑。</p>
     </div>
@@ -901,7 +1099,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Unity 内存分为哪几块？如何排查内存占用？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Managed Heap: C# 对象、List、字符串
+Native Memory: Texture、Mesh、AudioClip、AssetBundle
+GPU Memory: 纹理、Buffer、RenderTexture
+
+// 看到内存上涨，先判断是哪一块，再决定查 GC、资源引用还是显存</pre>
       <p>主要分三块：</p>
       <ul>
         <li><strong>Native（引擎/资源）内存</strong>：贴图、网格、音频、动画、AssetBundle 等，由引擎管理，<code class="inline">Resources.UnloadUnusedAssets</code> 释放。</li>
@@ -914,7 +1116,12 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Profiler 的常用模块有哪些？如何定位卡顿？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>排查 3DActGame 卡顿时先看 CPU Usage：区分 Update、Animator、Physics 和 UI；排查 KitchenChaos 时重点观察 AI 扫描、寻路、订单 UI rebuild 和 GC.Alloc。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">CPU Usage -&gt; 哪个函数耗时
+GC.Alloc   -&gt; 哪一帧发生托管分配
+Rendering  -&gt; SetPass / Batches / Triangles
+Memory     -&gt; 托管堆、纹理、网格、音频
+
+// KitchenChaos 查 AI 扫描；3DActGame 查 Animator、Physics、伤害检测</pre><div class="project-case"><strong>项目对应：</strong>排查 3DActGame 卡顿时先看 CPU Usage：区分 Update、Animator、Physics 和 UI；排查 KitchenChaos 时重点观察 AI 扫描、寻路、订单 UI rebuild 和 GC.Alloc。</div>
       <p>Profiler 模块：CPU Usage（函数耗时）、Memory（内存）、GPU Usage、Rendering（DrawCall/Batches）、Audio、Physics、UI、Network。</p>
       <p>定位卡顿流程：① CPU Usage 视图找到尖峰帧；② 切到 <code class="inline">Hierarchy</code> 视图按 <code class="inline">GC Alloc</code> / <code class="inline">Time ms</code> 排序；③ 定位耗时函数（如 <code class="inline">Camera.Render</code>、<code class="inline">Physics.Simulate</code>、<code class="inline">EventSystem.Update</code>、某 <code class="inline">Update</code>）；④ 用 <code class="inline">Deep Profile</code>（仅开发片段，开销大）或 <code class="inline">Profiler.BeginSample</code> 精确测量自定义代码。<mark class="key">真机用 <code class="inline">Profiler</code> 连接设备</mark>，PC 数据不代表移动端。</p>
     </div>
@@ -922,7 +1129,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>IL2CPP 和 Mono 后端的区别？为什么移动端用 IL2CPP？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Mono: C# -&gt; IL -&gt; 运行时 JIT/解释执行
+IL2CPP: C# -&gt; IL -&gt; C++ -&gt; 原生二进制
+
+// IL2CPP 通常启动/运行性能更稳定、难反编译；
+// 但构建时间更长，AOT 下反射和泛型代码要注意裁剪</pre>
       <div class="table-wrap">
       <table>
         <thead><tr><th></th><th>Mono</th><th>IL2CPP</th></tr></thead>
@@ -942,7 +1153,11 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>常见性能优化手段有哪些？（综合速答）</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">先测量：Profiler / Frame Debugger / Memory Profiler
+再定位：CPU？GC？渲染？物理？UI？加载？
+最后修改：缓存、批处理、对象池、异步加载、减少重建
+
+// 优化闭环 = 指标 -&gt; 假设 -&gt; 修改 -&gt; 对比，而不是凭经验乱改</pre>
       <div class="compare">
         <div class="card"><h4>CPU 优化</h4><p>合批/Instancing/SRP Batcher 降 DrawCall；对象池；缓存引用；减少物理计算频率；避免热路径 GC；逻辑分帧。</p></div>
         <div class="card"><h4>GPU 优化</h4><p>LOD；遮挡/视锥剔除；降 Overdraw；贴图压缩；简化 Shader；降分辨率；Mipmap。</p></div>
@@ -976,7 +1191,12 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>MVC、MVP、MVVM 在游戏客户端中的应用与区别？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">OrderManager   -&gt; Model / 数据
+OrderListUI    -&gt; View / 显示
+Presenter      -&gt; 监听事件并把数据转换给 View
+
+// KitchenChaos 的订单数据、OrderListUI、事件通知，
+// 就可以用 MVP 思路拆开，避免 UI 直接操作业务逻辑</pre>
       <div class="table-wrap">
       <table>
         <thead><tr><th>模式</th><th>结构</th><th>游戏中应用</th></tr></thead>
@@ -1008,7 +1228,15 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>事件系统/消息中心的作用？如何设计一个事件系统？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>两个项目都适合用“事件发布 → 多个订阅者响应”理解消息中心：厨房里的切菜事件驱动音效，动作游戏里的血量事件驱动 UI 和受击动画。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">MessageBus.Publish(new DamageEvent(target, amount));
+
+MessageBus.Subscribe&lt;DamageEvent&gt;(OnDamage);
+void OnDamage(DamageEvent e)
+{
+    health.Reduce(e.amount);
+}
+
+// 要处理取消订阅、生命周期和类型安全，避免全局消息变成隐式耦合</pre><div class="project-case"><strong>项目对应：</strong>两个项目都适合用“事件发布 → 多个订阅者响应”理解消息中心：厨房里的切菜事件驱动音效，动作游戏里的血量事件驱动 UI 和受击动画。</div>
       <p>事件系统实现<mark class="key">发布-订阅解耦</mark>：发送方不依赖接收方，降低模块耦合。设计要点：</p>
       <ul>
         <li>用 <code class="inline">Dictionary&lt;Type/eventKey, List&lt;Action&gt;&gt;</code> 存订阅者；提供 <code class="inline">Register/Unregister/Send</code>。</li>
@@ -1022,7 +1250,20 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>有限状态机（FSM）在游戏中如何应用？实现思路？</h3></div>
-    <div class="a"><div class="project-case"><strong>项目对应：</strong>KitchenChaos 的 AI 状态包括 Idle、MovingToTarget、Cutting、Waiting；3DActGame 敌人则是 Idle、Patrol、Pursuit、Attack、GetHit。状态机把复杂的 Update if-else 拆成可追踪的状态流转。</div>
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">switch (state)
+{
+    case AIState.Idle:          UpdateIdle(); break;
+    case AIState.MovingToTarget:UpdateMove(); break;
+    case AIState.Cutting:       UpdateCutting(); break;
+    case AIState.Waiting:       UpdateWaiting(); break;
+}
+
+void ChangeState(AIState next)
+{
+    state = next; stateEnterTime = Time.time;
+}
+
+// KitchenChaos AI 和 3DActGame Enemy 都可以这样追踪行为</pre><div class="project-case"><strong>项目对应：</strong>KitchenChaos 的 AI 状态包括 Idle、MovingToTarget、Cutting、Waiting；3DActGame 敌人则是 Idle、Patrol、Pursuit、Attack、GetHit。状态机把复杂的 Update if-else 拆成可追踪的状态流转。</div>
       <p>FSM 把对象行为组织成“状态 + 转换”，常用于 AI、角色状态、UI 流程。每个状态有 <code class="inline">OnEnter/OnUpdate/OnExit</code>，状态间按条件转换。实现思路：</p>
       <ul>
         <li>定义 <code class="inline">IState</code> 接口（Enter/Update/Exit）；<code class="inline">FSM</code> 持有当前状态与状态字典。</li>
@@ -1042,7 +1283,13 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>状态同步和帧同步的区别？各自的优缺点与适用场景？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">State Sync: 服务器定期发送
+{ position, rotation, hp }
+
+Frame Sync: 所有客户端执行相同输入帧
+{ frameId, input, randomSeed }
+
+// 你的两个项目目前是本地单机，面试时要明确说“未实现网络同步”</pre>
       <div class="table-wrap">
       <table>
         <thead><tr><th></th><th>状态同步</th><th>帧同步</th></tr></thead>
@@ -1063,7 +1310,10 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>游戏网络为什么常用 UDP？TCP 和 UDP 如何选择？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">UDP: Send(input); // 不保证到达、不保证顺序，但延迟低
+TCP: Send(reliableMessage); // 有序可靠，但丢包会阻塞后续数据
+
+// 移动/旋转可丢旧包，聊天/结算不能丢；按数据重要性选择协议</pre>
       <p><strong>TCP</strong>：可靠有序、面向连接，但拥塞控制与重传会引入延迟，适合要求可靠传输但对延迟不敏感的场景（聊天、登录、HTTP、回合制）。</p>
       <p><strong>UDP</strong>：无连接、不保证可靠/有序，但<mark class="key">延迟低、开销小</mark>，适合实时性强、可容忍丢包的场景（射击、格斗、动作）。游戏常在 UDP 上自建可靠层（KCP、可靠 UDP）兼顾低延迟与必要可靠性——关键指令可靠传输，位置高频状态允许丢包（用最新值覆盖）。</p>
       <div class="callout tip"><span class="label green">实践</span><p>许多实时游戏用“可靠 UDP”（如 KCP/ENet/Unity Netcode），在 UDP 基础上按需重传，避免 TCP 的队头阻塞。MMO 等强一致场景仍多用 TCP 或 TCP+UDP 混合。</p></div>
@@ -1072,7 +1322,14 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Unity 多线程有哪些方式？为什么不能在子线程调用大部分 Unity API？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">Task.Run(() =&gt;
+{
+    var result = HeavyPureCalculation(data); // 纯 C# 数据计算
+    // 不能在这里直接 Instantiate、transform.position = ...
+    mainThreadQueue.Enqueue(() =&gt; ApplyResult(result));
+});
+
+// Unity 大部分对象只能主线程访问</pre>
       <p>Unity 的 API 大多<mark class="key">只能在主线程调用</mark>，因为底层引擎状态非线程安全（C++ 层无锁）。多线程方式：</p>
       <ul>
         <li><code class="inline">System.Threading.Thread</code> / <code class="inline">ThreadPool</code>：原生线程，需自己同步，不能碰 Unity API。</li>
@@ -1086,14 +1343,20 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>什么是 KCP？相比 TCP 的优势？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">SendReliableWithKcp(input)
+// 在 UDP 上补充快速重传、拥塞控制、顺序组包
+// 目标：比 TCP 更适合实时游戏，但仍需处理断线和丢包</pre>
       <p><strong>KCP</strong>是一个<mark class="key">纯算法层的可靠传输协议</mark>，跑在 UDP 之上，可配置以牺牲 10%~20% 带宽换取 30%~40% 的延迟降低。相比 TCP 的优势：① 可关掉延迟 ACK 与 Nagle，降低小包延迟；② 快速重传（不等超时，按丢包计数触发）；③ 非退让/可配置拥塞控制，不因丢包而激进降速（适合实时游戏）。缺点是 UDP 可能被防火墙/QoS 限制，需选路或回退 TCP。游戏服务端（如 skynet）常用 KCP。</p>
     </div>
   </div>
 
   <div class="qa">
     <div class="q"><h3>网络延迟补偿（Lag Compensation）和客户端预测是什么？</h3></div>
-    <div class="a">
+    <div class="a"><div class="code-caption">示意代码 · 先看数据流，再看语法细节</div><pre class="code">客户端：立即播放攻击动画（预测）
+服务器：验证攻击时间和命中结果（权威）
+客户端：收到校正后平滑修正位置/状态
+
+// 预测不是“客户端说了算”，最终结果仍由服务器裁决</pre>
       <p><strong>客户端预测（Client Prediction）</strong>：客户端不等服务端确认就本地先执行操作（如移动），让操作感即时；服务端结果返回后校正。<mark class="key">降低操作延迟感</mark>。</p>
       <p><strong>服务器回溯 / 延迟补偿（Lag Compensation）</strong>：服务端处理射击命中判定时，把世界状态<mark class="key">回退到客户端开火那一刻</mark>（基于客户端 RTT），判定命中，避免“明明瞄准了却 miss”。常用于射击游戏。</p>
       <p><strong>插值与外推（Interpolation/Extrapolation）</strong>：对其它玩家的位置，用收到的前两帧<mark class="key">插值</mark>平滑显示（延迟一帧但流畅）；当数据包丢失时短暂<mark class="key">外推</mark>（按速度预测），避免卡顿。三者共同提升网络游戏的流畅手感。</p>
