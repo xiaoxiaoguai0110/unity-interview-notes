@@ -264,6 +264,13 @@ section.chapter { scroll-margin-top: 24px; }
   body.has-sidebar { padding-left: 0; }
   pre.code { white-space: pre-wrap; word-break: break-all; }
 }
+
+/* Project-linked study layer */
+.project-lab{margin:28px 0 42px;padding:24px 26px;border:1px solid #cfe3df;border-radius:14px;background:linear-gradient(135deg,#f4fbf8,#f8f7ff)}
+.project-lab h2{margin:0 0 8px;color:#0f172a}.project-lab>p{margin:0 0 18px;color:#475569}
+.project-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.project-card{padding:18px;border-radius:12px;background:#fff;border:1px solid #e2e8f0}.project-card h3{margin:0 0 8px;color:#0f766e}.project-card p{margin:6px 0;color:#475569;font-size:14px}
+.project-flow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin:16px 0 4px}.project-node{padding:9px 12px;border-radius:9px;background:#eef6ff;border:1px solid #b7d4f4;color:#1e3a5f;font-size:13px;text-align:center}.project-node.green{background:#ecfdf5;border-color:#a7e3c5;color:#166534}.project-node.orange{background:#fff7ed;border-color:#fed7aa;color:#9a3412}.project-arrow{color:#64748b;font-weight:700}.project-case{margin:16px 0 4px;padding:14px 16px;border-left:4px solid #7c3aed;border-radius:0 9px 9px 0;background:#faf7ff;color:#3f3f46;font-size:14px}.project-case strong{color:#6d28d9}.project-case code{background:#ede9fe;color:#5b21b6;padding:1px 4px;border-radius:4px}
+@media(max-width:700px){.project-grid{grid-template-columns:1fr}.project-lab{padding:18px}.project-flow{flex-direction:column}.project-arrow{transform:rotate(90deg)}}
 </style>
 </head>
 <body class="has-sidebar">
@@ -323,6 +330,23 @@ section.chapter { scroll-margin-top: 24px; }
 </nav>
 
 <main class="wrap">
+<section class="project-lab" id="project-map">
+  <h2>你的项目 · 八股知识地图</h2>
+  <p>学习每个知识点时，优先从下面两个项目寻找真实对应：KitchenChaos 负责业务架构与 AI，3DActGame 负责战斗、动画与敌人 AI。</p>
+  <div class="project-grid">
+    <div class="project-card">
+      <h3>KitchenChaosProject</h3>
+      <p>重点：事件驱动、ScriptableObject、抽象柜台、AI 显式状态机、订单与加工流程。</p>
+      <div class="project-flow"><span class="project-node green">订单生成</span><span class="project-arrow">→</span><span class="project-node">AI 选目标</span><span class="project-arrow">→</span><span class="project-node orange">拿取/切菜/烹饪</span><span class="project-arrow">→</span><span class="project-node green">装盘送餐</span></div>
+    </div>
+    <div class="project-card">
+      <h3>3DActGame</h3>
+      <p>重点：Animator、五段连招、Animation Event、敌人 FSM、NavMesh、血量事件和伤害检测。</p>
+      <div class="project-flow"><span class="project-node green">输入攻击</span><span class="project-arrow">→</span><span class="project-node">ComboStage</span><span class="project-arrow">→</span><span class="project-node orange">动画关键帧</span><span class="project-arrow">→</span><span class="project-node green">扇形伤害</span></div>
+    </div>
+  </div>
+</section>
+
 
 <!-- ============ CHAPTER 1 ============ -->
 <section class="chapter" id="ch1">
@@ -371,7 +395,7 @@ section.chapter { scroll-margin-top: 24px; }
 
   <div class="qa">
     <div class="q"><h3>委托、事件与 Action/Func 的关系？事件和委托的区别？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>KitchenChaos 用 <code>OrderManager.OnRecipeSpawned</code> 通知订单 UI 和 AI；3DActGame 的 <code>Health.OnHealthChanged</code> 通知血条和敌人受击状态。发布者只负责发事件，订阅者各自响应，减少模块直接引用。</div>
       <p><strong>委托</strong>是类型安全的函数指针，<code class="inline">delegate</code> 可持有多个方法（多播）。<code class="inline">Action&lt;T&gt;</code>（无返回值）和 <code class="inline">Func&lt;T,TResult&gt;</code>（有返回值）是框架内置的泛型委托，避免自定义 <code class="inline">delegate</code> 类型。</p>
       <p><strong>事件（event）</strong>是对委托的<mark class="key">封装</mark>，本质是 <code class="inline">private</code> 委托 + 两个访问器（add/remove）：</p>
       <ul>
@@ -471,7 +495,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>GameObject 和 Component 是什么关系？GetComponent 的原理与开销？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>KitchenChaos 用 <code>BaseCounter</code> 抽象柜台，再由 ContainerCounter、CuttingCounter、StoveCounter 等组件重写交互；这是 Unity 组件式设计和 C# 多态的结合。</div>
       <p>Unity 是<strong>组件化（Entity-Component）</strong>架构：<code class="inline">GameObject</code> 是容器（实体），本身没有行为；行为由挂载的 <code class="inline">Component</code> 提供。<code class="inline">Transform</code> 是每个 GameObject 必有的组件。<mark class="key">GameObject 是“是什么”，Component 是“能做什么”</mark>。</p>
       <p><code class="inline">GetComponent&lt;T&gt;()</code> 通过组件类型在对象的组件列表中查找。它有一定开销（native 调用 + 查找），<mark class="em">不应在 Update 每帧调用</mark>。正确做法是在 <code class="inline">Awake</code>/<code class="inline">Start</code> 中缓存引用：</p>
 <pre class="code"><span class="kw">private</span> <span class="type">Rigidbody</span> _rb;
@@ -696,7 +720,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Collision 和 Trigger 的区别？对应的回调函数？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>KitchenChaos 需要处理玩家与柜台、AI 与柜台的占用关系；3DActGame 的武器碰撞体在攻击窗口开启，配合伤害检测和 <code>DisableDamage</code> 延迟关闭，避免整段动画持续造成伤害。</div>
       <div class="table-wrap">
       <table>
         <thead><tr><th></th><th>Collision（碰撞）</th><th>Trigger（触发）</th></tr></thead>
@@ -714,7 +738,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Raycast 射线检测的原理与常用重载？如何优化？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>可把 KitchenChaos 的“目标柜台是否可交互”和 3DActGame 的“攻击范围检测”理解成空间查询：先筛选目标，再判断距离、阻挡和可操作条件，避免只依赖碰撞回调。</div>
       <p><code class="inline">Physics.Raycast</code> 从一点沿方向发射射线，返回是否命中及命中信息（<code class="inline">RaycastHit</code>：点、法线、距离、碰撞体）。</p>
 <pre class="code"><span class="cmt">// 常用重载：起点、方向、最大距离、层级掩码</span>
 <span class="kw">if</span> (<span class="type">Physics</span>.Raycast(origin, direction, <span class="kw">out</span> hit, maxDistance, layerMask)) {
@@ -741,7 +765,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Canvas 的三种渲染模式是什么？分别适用什么场景？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>3DActGame 的玩家血条和敌人血条属于世界信息 UI：敌人血条只在距离小于 20m 时显示，减少无意义的 UI 更新；固定 HUD 则更适合 Screen Space - Overlay。</div>
       <div class="table-wrap">
       <table>
         <thead><tr><th>模式</th><th>特点</th><th>适用场景</th></tr></thead>
@@ -817,7 +841,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Animator 状态机的过渡（Transition）和条件是什么？Has Exit Time 的作用？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>3DActGame 的玩家通过 <code>ComboStage</code> 和 <code>OnAttack</code> 参数推进五段连招；敌人通过 <code>MoveSpeed</code>、<code>AttackIndex</code> 和触发器切换移动、攻击、受击动画。</div>
       <p>Transition 是状态间的切换，由 Conditions（条件：参数 == / &gt; / &lt; 比较）触发。参数有 Float/Int/Bool/Trigger 四种，Trigger 是“一次性布尔”，触发后自动复位，适合攻击、受击等单次事件。</p>
       <p><code class="inline">Has Exit Time</code>：勾选后即使条件满足，也要等当前动画播到指定比例（Exit Time 0~1）才切换；不勾选则条件满足立即切换。<mark class="key">需要立即响应的切换应关掉 Has Exit Time</mark>（如受击打断），平滑衔接的可保留。Transition Duration 控制过渡混合时长，避免动作硬切。</p>
     </div>
@@ -847,7 +871,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>动画事件（Animation Event）和状态机脚本（State Machine Behaviour）的区别？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>敌人攻击动画的关键帧调用 <code>OnAttackHit()</code> 做扇形检测，动画结束调用 <code>OnAttackEnd()</code> 进入冷却。动画事件适合表达“动作发生到这一帧才真正命中”。</div>
       <p><strong>Animation Event</strong>：挂在 Animation Clip 时间轴上，到指定帧触发指定函数，<mark class="key">与动画片段绑定</mark>（换模型共用片段时事件一致）。适合播放音效、特效、攻击判定帧等。</p>
       <p><strong>State Machine Behaviour</strong>：挂在状态机状态上的脚本，提供 <code class="inline">OnStateEnter/Exit/Update/Move/IK</code> 回调，<mark class="key">与状态绑定</mark>。适合状态进入/退出时的逻辑（如进入攻击状态锁定输入）。事件更轻、更贴动画帧；SMB 更适合状态级逻辑。</p>
     </div>
@@ -862,7 +886,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Unity 的 GC 机制是什么？为什么会卡顿？如何减少 GC？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>AI 每帧扫描柜台、连招 Update 和敌人距离检测都属于高频路径。应避免在这些路径反复创建临时 List、字符串和 LINQ 对象，必要时复用容器并用 Profiler 验证 GC.Alloc。</div>
       <p>Unity 默认使用 Mono 的<strong> Boehm GC</strong>（非分代、非压缩、stop-the-world），触发时会暂停所有线程遍历堆找可达对象，回收不可达对象。<mark class="key">堆越大、碎片越多，GC 越久</mark>，表现为卡顿。IL2CPP 下也是 Boehm，可切换到 SGen（分代）或增量 GC（<code class="inline">USE_INCREMENTAL_GC</code>）缓解。</p>
       <p>减少 GC 的核心：<mark class="key">减少堆分配</mark>。</p>
       <ul>
@@ -890,7 +914,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Profiler 的常用模块有哪些？如何定位卡顿？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>排查 3DActGame 卡顿时先看 CPU Usage：区分 Update、Animator、Physics 和 UI；排查 KitchenChaos 时重点观察 AI 扫描、寻路、订单 UI rebuild 和 GC.Alloc。</div>
       <p>Profiler 模块：CPU Usage（函数耗时）、Memory（内存）、GPU Usage、Rendering（DrawCall/Batches）、Audio、Physics、UI、Network。</p>
       <p>定位卡顿流程：① CPU Usage 视图找到尖峰帧；② 切到 <code class="inline">Hierarchy</code> 视图按 <code class="inline">GC Alloc</code> / <code class="inline">Time ms</code> 排序；③ 定位耗时函数（如 <code class="inline">Camera.Render</code>、<code class="inline">Physics.Simulate</code>、<code class="inline">EventSystem.Update</code>、某 <code class="inline">Update</code>）；④ 用 <code class="inline">Deep Profile</code>（仅开发片段，开销大）或 <code class="inline">Profiler.BeginSample</code> 精确测量自定义代码。<mark class="key">真机用 <code class="inline">Profiler</code> 连接设备</mark>，PC 数据不代表移动端。</p>
     </div>
@@ -937,7 +961,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>Unity 中单例模式怎么实现？有哪些坑？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>两个项目都存在全局服务类需求，例如 GameManager、SoundManager、MusicManager、AudioManager。面试时要同时说明生命周期、场景切换、初始化顺序和测试困难等风险。</div>
 <pre class="code"><span class="kw">public</span> <span class="kw">class</span> <span class="type">GameManager</span> : <span class="type">MonoBehaviour</span> {
     <span class="kw">public</span> <span class="kw">static</span> <span class="type">GameManager</span> Instance { <span class="kw">get</span>; <span class="kw">private</span> <span class="kw">set</span>; }
     <span class="kw">void</span> <span class="fn">Awake</span>() {
@@ -984,7 +1008,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>事件系统/消息中心的作用？如何设计一个事件系统？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>两个项目都适合用“事件发布 → 多个订阅者响应”理解消息中心：厨房里的切菜事件驱动音效，动作游戏里的血量事件驱动 UI 和受击动画。</div>
       <p>事件系统实现<mark class="key">发布-订阅解耦</mark>：发送方不依赖接收方，降低模块耦合。设计要点：</p>
       <ul>
         <li>用 <code class="inline">Dictionary&lt;Type/eventKey, List&lt;Action&gt;&gt;</code> 存订阅者；提供 <code class="inline">Register/Unregister/Send</code>。</li>
@@ -998,7 +1022,7 @@ flowchart TD
 
   <div class="qa">
     <div class="q"><h3>有限状态机（FSM）在游戏中如何应用？实现思路？</h3></div>
-    <div class="a">
+    <div class="a"><div class="project-case"><strong>项目对应：</strong>KitchenChaos 的 AI 状态包括 Idle、MovingToTarget、Cutting、Waiting；3DActGame 敌人则是 Idle、Patrol、Pursuit、Attack、GetHit。状态机把复杂的 Update if-else 拆成可追踪的状态流转。</div>
       <p>FSM 把对象行为组织成“状态 + 转换”，常用于 AI、角色状态、UI 流程。每个状态有 <code class="inline">OnEnter/OnUpdate/OnExit</code>，状态间按条件转换。实现思路：</p>
       <ul>
         <li>定义 <code class="inline">IState</code> 接口（Enter/Update/Exit）；<code class="inline">FSM</code> 持有当前状态与状态字典。</li>
